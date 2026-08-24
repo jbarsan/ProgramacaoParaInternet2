@@ -72,3 +72,61 @@ export async function getPatient(id) {
    mensagem e repasse para quem chamou, em vez de inventar um
    texto genérico.
    ============================================================ */
+export async function createPatient(patient) {
+  const response = await fetch(PATIENTS_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(patient),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => null);
+    const message = errorData?.error || `Falha ao criar paciente (HTTP ${response.status})`;
+    throw new Error(message);
+  }
+
+  return response.json();
+}
+
+/**
+ * Busca a lista de atendimentos de um paciente.
+ * @param {number|string} patientId
+ */
+export async function listEncounters(patientId) {
+  const response = await fetch(`/api/patients/${patientId}/encounters`);
+
+  if (response.status === 404) {
+    throw new Error("Paciente não encontrado.");
+  }
+  if (!response.ok) {
+    throw new Error(`Não foi possível carregar os atendimentos (HTTP ${response.status})`);
+  }
+
+  return response.json();
+}
+
+/**
+ * Cria um novo atendimento para o paciente.
+ * @param {number|string} patientId
+ * @param {{startedAt: string, chiefComplaint: string, notes?: string}} encounter
+ */
+export async function createEncounter(patientId, encounter) {
+  const response = await fetch(`/api/patients/${patientId}/encounters`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(encounter),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => null);
+    const message = errorData?.error || `Falha ao registrar atendimento (HTTP ${response.status})`;
+    throw new Error(message);
+  }
+
+  return response.json();
+}
+

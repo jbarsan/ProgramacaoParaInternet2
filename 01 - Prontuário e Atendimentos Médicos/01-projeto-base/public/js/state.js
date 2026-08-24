@@ -21,11 +21,24 @@
  * um dia vão discordar entre si.
  */
 const state = {
+  view: "list", // "list" | "detail"
   patients: [],
   searchTerm: "",
   onlyActive: false,
   isLoading: true,
   errorMessage: null,
+
+  // Detalhe do paciente selecionado
+  selectedPatientId: null,
+  selectedPatient: null,
+  encounters: [],
+  isLoadingDetail: false,
+  detailError: null,
+  isDetailNotFound: false,
+
+  // Formulário de atendimento
+  encounterFormSubmitting: false,
+  encounterFormError: null,
 };
 
 /** Quem quer ser avisado quando o estado mudar. */
@@ -53,6 +66,12 @@ function notify() {
 export function getState() {
   return {
     ...state,
+    selectedPatient: state.selectedPatient
+      ? {
+        ...state.selectedPatient,
+        age: calculateAge(state.selectedPatient.birthDate),
+      }
+      : null,
     visiblePatients: getVisiblePatients(),
   };
 }
@@ -134,6 +153,82 @@ export function setError(message) {
   notify();
 }
 
+/** Inicia a navegação para o detalhe de um paciente */
+export function selectPatient(patientId) {
+  state.view = "detail";
+  state.selectedPatientId = patientId;
+  state.selectedPatient = null;
+  state.encounters = [];
+  state.isLoadingDetail = true;
+  state.detailError = null;
+  state.isDetailNotFound = false;
+  state.encounterFormError = null;
+  state.encounterFormSubmitting = false;
+  notify();
+}
+
+/** Preenche o paciente e seus atendimentos carregados da API */
+export function setPatientDetail(patient, encounters) {
+  state.selectedPatient = patient;
+  state.encounters = encounters;
+  state.isLoadingDetail = false;
+  state.detailError = null;
+  state.isDetailNotFound = false;
+  notify();
+}
+
+/** Registra que o paciente não foi encontrado (404) */
+export function setDetailNotFound() {
+  state.selectedPatient = null;
+  state.encounters = [];
+  state.isLoadingDetail = false;
+  state.isDetailNotFound = true;
+  state.detailError = null;
+  notify();
+}
+
+/** Registra erro ao carregar o detalhe do paciente */
+export function setDetailError(message) {
+  state.isLoadingDetail = false;
+  state.detailError = message;
+  notify();
+}
+
+/** Volta para a visualização da lista */
+export function backToList() {
+  state.view = "list";
+  state.selectedPatientId = null;
+  state.selectedPatient = null;
+  state.encounters = [];
+  state.isLoadingDetail = false;
+  state.detailError = null;
+  state.isDetailNotFound = false;
+  state.encounterFormError = null;
+  state.encounterFormSubmitting = false;
+  notify();
+}
+
+/** Define o estado de submissão do formulário de atendimento */
+export function setEncounterFormSubmitting(isSubmitting) {
+  state.encounterFormSubmitting = isSubmitting;
+  notify();
+}
+
+/** Define mensagem de erro vinda do backend para o formulário */
+export function setEncounterFormError(errorMessage) {
+  state.encounterFormError = errorMessage;
+  state.encounterFormSubmitting = false;
+  notify();
+}
+
+/** Adiciona o novo atendimento criado à lista */
+export function addEncounter(encounter) {
+  state.encounters = [encounter, ...state.encounters];
+  state.encounterFormError = null;
+  state.encounterFormSubmitting = false;
+  notify();
+}
+
 // Funções auxiliares
 
 /**
@@ -150,6 +245,7 @@ function normalizeText(text) {
 
 /** Calcula a idade em anos a partir de "AAAA-MM-DD" */
 function calculateAge(isoDate) {
+  if (!isoDate) return 0;
   const [year, month, day] = isoDate.split("-").map(Number);
   const today = new Date();
 
@@ -164,4 +260,5 @@ function calculateAge(isoDate) {
 
   return age;
 }
+
 

@@ -46,3 +46,10 @@
 - **Objetivo**: Ajudar com erro no momento de inserir os dados no banco de dados. Eu estava recebendo o erro 500.
 - **Decisão**: Recebi a explicação do erro e percebi que estava passando mais parâmetros para o banco do que o necessário. Corrigi o código e os dados foram inseridos corretamente.
 - **Validei**: Rodei o app e os dados foram inseridos corretamente.
+
+## Interação 8
+
+- **Ferramenta**: Gemini
+- **Objetivo**: Solicitei ajuda para elaborar a API de Encounter, principalmente na elaboração das função validaEncounterInput. Também solicitei ajuda na elaboração da tela de detalhe do paciente e atendimentos, além de ajuda na elaboração dos componentes CSS (que não possuo expertize). Também foi solicitado ajuda na elaboração dos scripts JS (que também não possuo expertize) e ajustes na página index.html
+- **Decisão**: Recebi as explicações e exemplos de códigos, além de ajustes e orientações de onde deveria ser feito os ajustes necessários.
+- **Validei**: Após as orientações e ajustes, rodei o app e ele funcionou corretamente.

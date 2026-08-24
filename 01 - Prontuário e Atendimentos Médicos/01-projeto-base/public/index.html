@@ -27,36 +27,38 @@
 
   <main class="container app-main">
 
-    <!-- ------------------------------------------------------
-         Barra de filtros.
-         Nenhum evento é registrado aqui: isso é papel do app.js.
-         O HTML descreve a ESTRUTURA, não o comportamento.
-    ------------------------------------------------------- -->
-    <section class="toolbar" aria-label="Filtros da lista de pacientes">
-      <div class="toolbar__search">
-        <label class="form-label" for="search-input">Buscar paciente</label>
-        <input
-          id="search-input"
-          class="form-control form-control-lg"
-          type="search"
-          placeholder="Digite parte do nome ou CNS…"
-          autocomplete="off" />
-      </div>
+    <!-- Visão 1: Listagem de Pacientes -->
+    <div id="list-view">
+      <section class="toolbar" aria-label="Filtros da lista de pacientes">
+        <div class="toolbar__search">
+          <label class="form-label" for="search-input">Buscar paciente</label>
+          <input
+            id="search-input"
+            class="form-control form-control-lg"
+            type="search"
+            placeholder="Digite parte do nome ou CNS…"
+            autocomplete="off" />
+        </div>
 
-      <div class="toolbar__filter form-check form-switch">
-        <input class="form-check-input" type="checkbox" id="only-active-input" />
-        <label class="form-check-label" for="only-active-input">
-          Mostrar apenas pacientes ativos
-        </label>
-      </div>
-    </section>
+        <div class="toolbar__filter form-check form-switch">
+          <input class="form-check-input" type="checkbox" id="only-active-input" />
+          <label class="form-check-label" for="only-active-input">
+            Mostrar apenas pacientes ativos
+          </label>
+        </div>
+      </section>
 
-    <p id="result-counter" class="result-counter" aria-live="polite"></p>
+      <p id="result-counter" class="result-counter" aria-live="polite"></p>
 
-    <!-- A lista é desenhada por render.js. Ela nasce vazia de propósito. -->
-    <ul id="patient-list" class="patient-list"></ul>
+      <!-- A lista é desenhada por render.js. Ela nasce vazia de propósito. -->
+      <ul id="patient-list" class="patient-list"></ul>
+    </div>
+
+    <!-- Visão 2: Painel de Detalhes do Paciente e Atendimentos -->
+    <div id="detail-view" style="display: none;"></div>
 
   </main>
+
 
   <!-- type="module" habilita import/export no navegador -->
   <script type="module" src="./js/app.js"></script>

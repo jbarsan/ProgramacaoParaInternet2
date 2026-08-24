@@ -178,14 +178,14 @@ function isBlank(value: unknown): boolean {
 
 function validatePatientInput(body: any): string | null {
   if (isBlank(body?.name)) {
-    return "O campo 'name' é obrigatório.";
+    return "O campo 'nome' é obrigatório.";
   }
   if (isBlank(body?.birthDate) || !ISO_DATE.test(body.birthDate)) {
-    return "O campo 'birthDate' deve ser AAAA-MM-DD.";
+    return "O campo 'Data de Nascimento' deve ser AAAA-MM-DD.";
   }
   // Validação do CNS
   if (isBlank(body?.nationalId)) {
-    return "O campo 'nationalId' é obrigatório."
+    return "O campo 'CNS' é obrigatório."
   }
   return null;
   // null = esta tudo certo
@@ -265,6 +265,85 @@ app.get("/api/patients/:id", (request, response) => {
   }
 
   return response.json(patient);
+});
+
+// Registrando o atendimento
+
+// Função para validação de atendimento
+// É uma função que pode ser mesclada com a função de validação de paciente
+
+const ISO_DATETIME = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/;
+
+function validateEncounterInput(body: any): string | null {
+  if (isBlank(body?.startedAt) || !ISO_DATETIME.test(body.startedAt)) {
+    return "O campo 'Data e Hora' deve estar no formato AAAA-MM-DDTHH:MM.";
+  }
+  if (isBlank(body?.chiefComplaint)) {
+    return "O campo 'Queixa Principal' é obrigatório.";
+  }
+  return null;
+}
+
+// GET /api/patients/:id/encounters
+// Lista atendimentos de um paciente
+app.get("/api/patients/:id/encounters", (request, response) => {
+  const { id } = request.params;
+
+  const patient = db
+    .prepare("SELECT id FROM patients WHERE id = ?")
+    .get(id);
+
+  if (!patient) {
+    return response.status(404).json({ error: "Paciente não encontrado" });
+  }
+
+  const encounters = db
+    .prepare(
+      "SELECT id, patient_id AS patientId, started_at AS startedAt, chief_complaint AS chiefComplaint, notes FROM encounters WHERE patient_id = ? ORDER BY started_at DESC"
+    )
+    .all(id);
+
+  return response.json(encounters);
+});
+
+// POST /api/patients/:id/encounters
+// Registra novo atendimento para o paciente
+app.post("/api/patients/:id/encounters", (request, response) => {
+  const { id } = request.params;
+
+  const patient = db
+    .prepare("SELECT id FROM patients WHERE id = ?")
+    .get(id);
+
+  if (!patient) {
+    return response.status(404).json({ error: "Paciente não encontrado" });
+  }
+
+  const error = validateEncounterInput(request.body);
+  if (error) {
+    return response.status(400).json({ error });
+  }
+
+  const { startedAt, chiefComplaint, notes } = request.body;
+
+  const stmt = db.prepare(
+    "INSERT INTO encounters (patient_id, started_at, chief_complaint, notes) VALUES (?, ?, ?, ?)"
+  );
+
+  const result = stmt.run(
+    id,
+    startedAt.trim(),
+    chiefComplaint.trim(),
+    notes && typeof notes === "string" ? notes.trim() : (notes ?? null)
+  );
+
+  const newEncounter = db
+    .prepare(
+      "SELECT id, patient_id AS patientId, started_at AS startedAt, chief_complaint AS chiefComplaint, notes FROM encounters WHERE id = ?"
+    )
+    .get(result.lastInsertRowid);
+
+  return response.status(201).json(newEncounter);
 });
 
 // ------------------------------------------------------------
