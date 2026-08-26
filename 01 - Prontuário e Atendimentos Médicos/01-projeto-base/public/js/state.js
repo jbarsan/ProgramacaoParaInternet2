@@ -260,5 +260,3 @@ function calculateAge(isoDate) {
 
   return age;
 }
-
-

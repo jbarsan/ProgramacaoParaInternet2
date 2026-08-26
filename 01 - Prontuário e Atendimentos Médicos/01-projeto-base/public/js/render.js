@@ -379,5 +379,3 @@ export function renderPatientDetail(state, container) {
 
   container.innerHTML = patientDetailTemplate(state);
 }
-
-
