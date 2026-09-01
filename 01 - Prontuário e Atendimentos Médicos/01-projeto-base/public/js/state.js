@@ -39,6 +39,11 @@ const state = {
   // Formulário de atendimento
   encounterFormSubmitting: false,
   encounterFormError: null,
+
+  // Modal e Formulário de cadastro de paciente
+  isAddPatientModalOpen: false,
+  patientFormSubmitting: false,
+  patientFormError: null,
 };
 
 /** Quem quer ser avisado quando o estado mudar. */
@@ -228,6 +233,60 @@ export function addEncounter(encounter) {
   state.encounterFormSubmitting = false;
   notify();
 }
+
+/** Abre o modal de cadastro de novo paciente */
+export function openAddPatientModal() {
+  state.isAddPatientModalOpen = true;
+  state.patientFormError = null;
+  state.patientFormSubmitting = false;
+  notify();
+}
+
+/** Fecha o modal de cadastro de novo paciente */
+export function closeAddPatientModal() {
+  state.isAddPatientModalOpen = false;
+  state.patientFormError = null;
+  state.patientFormSubmitting = false;
+  notify();
+}
+
+/** Define o estado de submissão do formulário de paciente */
+export function setPatientFormSubmitting(isSubmitting) {
+  state.patientFormSubmitting = isSubmitting;
+  notify();
+}
+
+/** Define mensagem de erro vinda do backend para o formulário de paciente */
+export function setPatientFormError(errorMessage) {
+  state.patientFormError = errorMessage;
+  state.patientFormSubmitting = false;
+  notify();
+}
+
+/** Adiciona um novo paciente cadastrado ao estado */
+export function addPatient(newPatient) {
+  state.patients = [newPatient, ...state.patients];
+  state.isAddPatientModalOpen = false;
+  state.patientFormError = null;
+  state.patientFormSubmitting = false;
+  notify();
+}
+
+/** Remove um paciente do estado pelo ID */
+export function removePatient(patientId) {
+  state.patients = state.patients.filter((p) => Number(p.id) !== Number(patientId));
+  if (Number(state.selectedPatientId) === Number(patientId)) {
+    state.view = "list";
+    state.selectedPatientId = null;
+    state.selectedPatient = null;
+    state.encounters = [];
+    state.isLoadingDetail = false;
+    state.detailError = null;
+    state.isDetailNotFound = false;
+  }
+  notify();
+}
+
 
 // Funções auxiliares
 

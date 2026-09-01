@@ -198,28 +198,31 @@ app.post("/api/patients", (request, response) => {
     return response.status(400).json({ error });
   }
 
-  const { name, birthDate, nationalId } = request.body;
-  /*
-    // Acha o maior ID atual e soma 1 para criar o novo.
-    const nextId = patients.length === 0 ? 1 : Math.max(...patients.map(p => p.id)) + 1;
-  
-    const newPatient = {
-      id: nextId,
-      name: name.trim(),
-      birthDate,
-      nationalId: nationalId.trim(),
-      active: true
-    };
-  */
+  const { name, birthDate, nationalId, active } = request.body;
+
+  // Verifica se o CNS já está cadastrado
+  const existingPatient = db
+    .prepare("SELECT id FROM patients WHERE national_id = ?")
+    .get(nationalId.trim());
+
+  if (existingPatient) {
+    return response.status(409).json({ error: "Já existe um paciente cadastrado com este CNS." });
+  }
+
+  const isActive = typeof active === "boolean" ? (active ? 1 : 0) : 1;
+
   const stmt = db
-    .prepare("INSERT INTO patients (name, birth_date, national_id) VALUES (?, ?, ?)");
+    .prepare("INSERT INTO patients (name, birth_date, national_id, active) VALUES (?, ?, ?, ?)");
 
-  const result = stmt.run(name.trim(), birthDate, nationalId.trim());
+  const result = stmt.run(name.trim(), birthDate, nationalId.trim(), isActive);
   const newPatient = db
-    .prepare("SELECT id, name, birth_date AS birthDate, national_id AS nationalId FROM patients WHERE id = ?")
-    .get(result.lastInsertRowid);
+    .prepare("SELECT id, name, birth_date AS birthDate, national_id AS nationalId, active FROM patients WHERE id = ?")
+    .get(result.lastInsertRowid) as { id: number; name: string; birthDate: string; nationalId: string; active: number };
 
-  return response.status(201).json(newPatient);
+  return response.status(201).json({
+    ...newPatient,
+    active: Boolean(newPatient.active),
+  });
 });
 
 // ============================================================
@@ -237,34 +240,55 @@ app.get("/api/patients", (request, response) => {
     const rows = db
       .prepare("SELECT id, name, birth_date AS birthDate, national_id AS nationalId, active FROM patients WHERE active = 1 ORDER BY name")
       .all();
-    return response.json(rows);
+    return response.json(rows.map((r: any) => ({ ...r, active: Boolean(r.active) })));
   }
 
   if (active === "false") {
     const rows = db
       .prepare("SELECT id, name, birth_date AS birthDate, national_id AS nationalId, active FROM patients WHERE active = 0 ORDER BY name")
       .all();
-    return response.json(rows);
+    return response.json(rows.map((r: any) => ({ ...r, active: Boolean(r.active) })));
   }
 
   const rows = db
     .prepare("SELECT id, name, birth_date AS birthDate, national_id AS nationalId, active FROM patients ORDER BY name")
     .all();
 
-  return response.json(rows);
+  return response.json(rows.map((r: any) => ({ ...r, active: Boolean(r.active) })));
 })
 
 app.get("/api/patients/:id", (request, response) => {
   const { id } = request.params;
   const patient = db
     .prepare("SELECT id, name, birth_date AS birthDate, national_id AS nationalId, active FROM patients WHERE id = ?")
-    .get(id);
+    .get(id) as { id: number; name: string; birthDate: string; nationalId: string; active: number } | undefined;
 
   if (!patient) {
     return response.status(404).json({ error: "Paciente nao encontrado" });
   }
 
-  return response.json(patient);
+  return response.json({
+    ...patient,
+    active: Boolean(patient.active),
+  });
+});
+
+// DELETE /api/patients/:id
+// Remove um paciente e seus atendimentos associados (via cascade)
+app.delete("/api/patients/:id", (request, response) => {
+  const { id } = request.params;
+
+  const patient = db
+    .prepare("SELECT id FROM patients WHERE id = ?")
+    .get(id);
+
+  if (!patient) {
+    return response.status(404).json({ error: "Paciente não encontrado" });
+  }
+
+  db.prepare("DELETE FROM patients WHERE id = ?").run(id);
+
+  return response.status(204).send();
 });
 
 // Registrando o atendimento

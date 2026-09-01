@@ -72,9 +72,6 @@ function patientCardTemplate(patient) {
       </div>
     </li>
   `;
-  // João Carlos:
-  // O ${patient.age} na linha 52 foi adicionado para exibir a idade do paciente,
-  // todo o cálculo da idade foi feito no arquivo state.js
 }
 
 /** Tela de "nada encontrado" na busca. */
@@ -259,8 +256,19 @@ function patientDetailTemplate(state) {
       <!-- Cartão de informações do paciente -->
       <section class="patient-detail__header-card">
         <div class="patient-detail__title-group">
-          <h2 class="patient-detail__name">${escapeHtml(selectedPatient.name)}</h2>
-          <span class="status-badge ${badgeModifier}">${badgeLabel}</span>
+          <div class="d-flex align-items-center gap-2 flex-wrap">
+            <h2 class="patient-detail__name">${escapeHtml(selectedPatient.name)}</h2>
+            <span class="status-badge ${badgeModifier}">${badgeLabel}</span>
+          </div>
+          <button
+            type="button"
+            class="btn btn-sm btn-outline-danger"
+            data-action="delete-patient"
+            data-patient-id="${selectedPatient.id}"
+            data-patient-name="${escapeHtml(selectedPatient.name)}"
+          >
+            Remover Paciente
+          </button>
         </div>
         <div class="patient-detail__meta-grid">
           <div><strong>Data de Nascimento:</strong> ${formatDate(selectedPatient.birthDate)} (${selectedPatient.age} anos)</div>
@@ -379,3 +387,108 @@ export function renderPatientDetail(state, container) {
 
   container.innerHTML = patientDetailTemplate(state);
 }
+
+/** Renderiza o modal de cadastro de novo paciente */
+export function renderPatientModal(state, container) {
+  if (!container) return;
+
+  if (!state.isAddPatientModalOpen) {
+    container.innerHTML = "";
+    return;
+  }
+
+  const formErrorHtml = state.patientFormError
+    ? `
+      <div class="form-alert-error" role="alert">
+        <span>⚠️</span>
+        <span>${escapeHtml(state.patientFormError)}</span>
+      </div>
+    `
+    : "";
+
+  container.innerHTML = `
+    <div class="patient-modal-backdrop">
+      <div class="patient-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="patient-modal-title">
+        <div class="patient-modal-header">
+          <h3 id="patient-modal-title" class="patient-modal-title">Cadastrar Novo Paciente</h3>
+          <button type="button" class="patient-modal-close" data-action="close-add-patient-modal" aria-label="Fechar">✕</button>
+        </div>
+
+        <div class="patient-modal-body">
+          ${formErrorHtml}
+
+          <form id="patient-form" novalidate>
+            <div class="mb-3">
+              <label for="patient-name" class="form-label">Nome Completo *</label>
+              <input
+                type="text"
+                id="patient-name"
+                name="name"
+                class="form-control"
+                placeholder="Ex: Maria dos Santos Silva"
+                required
+                autofocus
+              />
+            </div>
+
+            <div class="mb-3">
+              <label for="patient-birth-date" class="form-label">Data de Nascimento *</label>
+              <input
+                type="date"
+                id="patient-birth-date"
+                name="birthDate"
+                class="form-control"
+                required
+              />
+            </div>
+
+            <div class="mb-3">
+              <label for="patient-national-id" class="form-label">Cartão Nacional de Saúde (CNS) *</label>
+              <input
+                type="text"
+                id="patient-national-id"
+                name="nationalId"
+                class="form-control"
+                placeholder="Ex: 700012345678999"
+                maxlength="15"
+                required
+              />
+              <div class="form-text">CNS com 15 dígitos numéricos.</div>
+            </div>
+
+            <div class="mb-4 form-check">
+              <input
+                type="checkbox"
+                id="patient-active"
+                name="active"
+                class="form-check-input"
+                checked
+              />
+              <label for="patient-active" class="form-check-label">
+                Paciente ativo no prontuário
+              </label>
+            </div>
+
+            <div class="patient-modal-footer">
+              <button
+                type="button"
+                class="btn btn-outline-secondary"
+                data-action="close-add-patient-modal"
+              >
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                class="btn btn-primary"
+                ${state.patientFormSubmitting ? "disabled" : ""}
+              >
+                ${state.patientFormSubmitting ? "Salvando…" : "Cadastrar Paciente"}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  `;
+}
+

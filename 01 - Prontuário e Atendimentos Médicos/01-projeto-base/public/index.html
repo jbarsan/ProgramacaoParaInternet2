@@ -40,11 +40,17 @@
             autocomplete="off" />
         </div>
 
-        <div class="toolbar__filter form-check form-switch">
-          <input class="form-check-input" type="checkbox" id="only-active-input" />
-          <label class="form-check-label" for="only-active-input">
-            Mostrar apenas pacientes ativos
-          </label>
+        <div class="toolbar__actions">
+          <div class="toolbar__filter form-check form-switch">
+            <input class="form-check-input" type="checkbox" id="only-active-input" />
+            <label class="form-check-label" for="only-active-input">
+              Mostrar apenas pacientes ativos
+            </label>
+          </div>
+
+          <button type="button" class="btn btn-primary" data-action="open-add-patient-modal">
+            + Cadastrar Paciente
+          </button>
         </div>
       </section>
 
@@ -56,6 +62,9 @@
 
     <!-- Visão 2: Painel de Detalhes do Paciente e Atendimentos -->
     <div id="detail-view" style="display: none;"></div>
+
+    <!-- Container do Modal de Cadastro de Paciente -->
+    <div id="modal-container"></div>
 
   </main>
 

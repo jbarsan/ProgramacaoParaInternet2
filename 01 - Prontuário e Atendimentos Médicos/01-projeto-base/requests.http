@@ -65,14 +65,30 @@ POST {{host}}/api/patients
   "nationalId": "700012345678914"
 }
 
+### 10. FALHA PROPOSITAL: CNS duplicado  -> esperado 409
+POST {{host}}/api/patients
+Content-Type: application/json
+
+{
+  "name": "Outro Paciente Mesmo CNS",
+  "birthDate": "1990-04-12",
+  "nationalId": "700012345678901"
+}
+
+### 11. Remover paciente existente  -> esperado 204
+DELETE {{host}}/api/patients/18
+
+### 12. FALHA PROPOSITAL: Remover paciente inexistente  -> esperado 404
+DELETE {{host}}/api/patients/9999
+
 ### ==========================================================
 ### ATIVIDADE - Encounters
 ### ==========================================================
 
-### 10. Listar atendimentos do paciente 1  -> esperado 200
+### 13. Listar atendimentos do paciente 1  -> esperado 200
 GET {{host}}/api/patients/1/encounters
 
-### 11. Criar atendimento  -> esperado 201
+### 14. Criar atendimento  -> esperado 201
 POST {{host}}/api/patients/1/encounters
 Content-Type: application/json
 
@@ -82,7 +98,7 @@ Content-Type: application/json
   "notes": "Orientada hidratacao e retorno em 7 dias."
 }
 
-### 12. FALHA PROPOSITAL: sem chiefComplaint  -> esperado 400
+### 15. FALHA PROPOSITAL: sem chiefComplaint  -> esperado 400
 POST {{host}}/api/patients/1/encounters
 Content-Type: application/json
 
@@ -90,7 +106,7 @@ Content-Type: application/json
   "startedAt": "2026-08-17T09:30"
 }
 
-### 13. FALHA PROPOSITAL: paciente inexistente  -> esperado 404
+### 16. FALHA PROPOSITAL: paciente inexistente  -> esperado 404
 POST {{host}}/api/patients/9999/encounters
 Content-Type: application/json
 

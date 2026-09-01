@@ -70,6 +70,20 @@ body {
   }
 }
 
+.toolbar__actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaco-3);
+}
+
+@media (min-width: 576px) {
+  .toolbar__actions {
+    flex-direction: row;
+    align-items: center;
+    gap: var(--espaco-4);
+  }
+}
+
 .result-counter {
   margin: 0 0 var(--espaco-4);
   color: var(--cor-texto-suave);

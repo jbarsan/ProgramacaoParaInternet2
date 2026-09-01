@@ -16,7 +16,14 @@
  * Nunca o contrário. A tela nunca é a fonte da verdade.
  * ============================================================
  */
-import { listPatients, getPatient, listEncounters, createEncounter } from "./api.js";
+import {
+  listPatients,
+  getPatient,
+  createPatient,
+  deletePatient,
+  listEncounters,
+  createEncounter,
+} from "./api.js";
 import {
   subscribe,
   getState,
@@ -32,6 +39,12 @@ import {
   setEncounterFormSubmitting,
   setEncounterFormError,
   addEncounter,
+  openAddPatientModal,
+  closeAddPatientModal,
+  setPatientFormSubmitting,
+  setPatientFormError,
+  addPatient,
+  removePatient,
 } from "./state.js";
 import {
   renderPatientList,
@@ -39,11 +52,13 @@ import {
   renderLoading,
   renderError,
   renderPatientDetail,
+  renderPatientModal,
 } from "./render.js";
 
 /* --- Os elementos que existem na página. Buscamos UMA vez. --- */
 const listViewElement = document.querySelector("#list-view");
 const detailViewElement = document.querySelector("#detail-view");
+const modalContainerElement = document.querySelector("#modal-container");
 const searchInput = document.querySelector("#search-input");
 const onlyActiveInput = document.querySelector("#only-active-input");
 const patientListElement = document.querySelector("#patient-list");
@@ -54,6 +69,9 @@ const resultCounterElement = document.querySelector("#result-counter");
  * Ela é chamada toda vez que o estado muda — e apenas por isso.
  */
 function renderApp(state) {
+  // Renderiza o modal (se estiver aberto ou limpa se fechado)
+  renderPatientModal(state, modalContainerElement);
+
   if (state.view === "detail") {
     listViewElement.style.display = "none";
     detailViewElement.style.display = "block";
@@ -123,6 +141,54 @@ function handleBackToList(updateHistory = true) {
   }
 }
 
+/** Trata a remoção de um paciente */
+async function handleDeletePatient(patientId, patientName) {
+  const nameDisplay = patientName ? `"${patientName}"` : "este paciente";
+  const confirmed = window.confirm(
+    `Deseja realmente remover o paciente ${nameDisplay}?\n\nTodos os atendimentos vinculados também serão excluídos. Esta ação não pode ser desfeita.`
+  );
+
+  if (!confirmed) return;
+
+  try {
+    await deletePatient(patientId);
+    removePatient(patientId);
+
+    // Se estávamos na visão de detalhes do paciente removido, limpa a URL
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("id") === String(patientId)) {
+      const url = new URL(window.location.href);
+      url.searchParams.delete("id");
+      window.history.pushState({}, "", url);
+    }
+  } catch (error) {
+    alert(error.message || "Erro ao remover paciente.");
+  }
+}
+
+/** Trata o envio do formulário de novo paciente */
+async function handlePatientSubmit(form) {
+  const formData = new FormData(form);
+  const name = (formData.get("name") ?? "").toString().trim();
+  const birthDate = (formData.get("birthDate") ?? "").toString().trim();
+  const nationalId = (formData.get("nationalId") ?? "").toString().trim();
+  const active = form.querySelector("#patient-active")?.checked ?? true;
+
+  setPatientFormSubmitting(true);
+
+  try {
+    const newPatient = await createPatient({
+      name,
+      birthDate,
+      nationalId,
+      active,
+    });
+    addPatient(newPatient);
+  } catch (error) {
+    setPatientFormError(error.message);
+  }
+}
+
 /** Trata o envio do formulário de novo atendimento */
 async function handleEncounterSubmit(form) {
   const currentState = getState();
@@ -157,23 +223,44 @@ onlyActiveInput.addEventListener("change", (event) => {
   setOnlyActive(event.target.checked);
 });
 
-// Clique na lista para abrir o prontuário
-patientListElement.addEventListener("click", (event) => {
-  const target = event.target.closest("[data-action='view-patient']");
-  if (!target) return;
+// Ações na barra de ferramentas e lista de pacientes
+listViewElement.addEventListener("click", (event) => {
+  // Abrir modal de novo paciente
+  const openModalBtn = event.target.closest("[data-action='open-add-patient-modal']");
+  if (openModalBtn) {
+    openAddPatientModal();
+    return;
+  }
 
-  const patientId = target.dataset.patientId;
-  if (patientId) {
-    openPatient(Number(patientId));
+  // Ver atendimentos / detalhes do paciente
+  const viewBtn = event.target.closest("[data-action='view-patient']");
+  if (viewBtn) {
+    const patientId = viewBtn.dataset.patientId;
+    if (patientId) {
+      openPatient(Number(patientId));
+    }
+    return;
   }
 });
 
-// Ações no painel de detalhes (botão voltar)
+// Ações no painel de detalhes (botão voltar e botão remover paciente)
 detailViewElement.addEventListener("click", (event) => {
   const backBtn = event.target.closest("[data-action='back-to-list']");
   if (backBtn) {
     event.preventDefault();
     handleBackToList();
+    return;
+  }
+
+  const deleteBtn = event.target.closest("[data-action='delete-patient']");
+  if (deleteBtn) {
+    event.preventDefault();
+    const patientId = deleteBtn.dataset.patientId;
+    const patientName = deleteBtn.dataset.patientName;
+    if (patientId) {
+      handleDeletePatient(Number(patientId), patientName);
+    }
+    return;
   }
 });
 
@@ -182,6 +269,29 @@ detailViewElement.addEventListener("submit", (event) => {
   if (event.target.id === "encounter-form") {
     event.preventDefault();
     handleEncounterSubmit(event.target);
+  }
+});
+
+// Ações no modal de cadastro de paciente (fechar e submit)
+modalContainerElement.addEventListener("click", (event) => {
+  const closeBtn = event.target.closest("[data-action='close-add-patient-modal']");
+  const isBackdrop = event.target.classList.contains("patient-modal-backdrop");
+  if (closeBtn || isBackdrop) {
+    closeAddPatientModal();
+  }
+});
+
+modalContainerElement.addEventListener("submit", (event) => {
+  if (event.target.id === "patient-form") {
+    event.preventDefault();
+    handlePatientSubmit(event.target);
+  }
+});
+
+// Teclado: fechar modal ao pressionar Escape
+window.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && getState().isAddPatientModalOpen) {
+    closeAddPatientModal();
   }
 });
 
@@ -219,3 +329,4 @@ async function start() {
 }
 
 start();
+

@@ -130,3 +130,22 @@ export async function createEncounter(patientId, encounter) {
   return response.json();
 }
 
+/**
+ * Remove um paciente do prontuário.
+ * @param {number|string} id
+ */
+export async function deletePatient(id) {
+  const response = await fetch(`/api/patients/${id}`, {
+    method: "DELETE",
+  });
+
+  if (response.status === 404) {
+    throw new Error("Paciente não encontrado.");
+  }
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => null);
+    const message = errorData?.error || `Falha ao remover paciente (HTTP ${response.status})`;
+    throw new Error(message);
+  }
+}
