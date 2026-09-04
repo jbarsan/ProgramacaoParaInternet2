@@ -1,0 +1,20 @@
+-- Dados ficticios. Nenhum dado real de paciente pode entrar aqui.
+INSERT INTO patients (name, birth_date, national_id, active) VALUES
+  ('Ana Beatriz Nogueira',   '1991-03-14', '700012345678901', 1),
+  ('Carlos Eduardo Matias',  '1978-11-02', '700012345678902', 1),
+  ('Dulcineia Rocha Lima',   '1955-07-23', '700012345678903', 1),
+  ('Eduardo Vasconcelos',    '2003-01-09', '700012345678904', 0),
+  ('Fernanda Passos Alves',  '1986-09-30', '700012345678905', 1),
+  ('Gustavo Rios Camelo',    '1999-05-17', '700012345678906', 1),
+  ('Helena Marques Sa',      '1968-12-05', '700012345678907', 0),
+  ('Igor Bastos Teixeira',   '1994-08-21', '700012345678908', 1),
+  ('Vitória Meireles Sampaio', '2000-04-12', '700012345678909', 1),
+  ('Lucas Peixoto Andrade', '1989-10-05', '700012345678910', 1),
+  ('Juliana Silveira Castro', '1995-12-18', '700012345678911', 0),
+  ('Tiago Farias Neves', '1982-06-25', '700012345678912', 1),
+  ('Patrícia Queiroz Moura', '1973-03-08', '700012345678913', 0),
+  ('Bernardo Tavares Cruz', '2005-08-14', '700012345678914', 1),
+  ('Renata Guimarães Lopes', '1990-11-29', '700012345678915', 1),
+  ('Marcos Vinícius Freitas', '1964-02-17', '700012345678916', 1),
+  ('Wesley Costa Ribeiro', '2001-07-03', '700012345678917', 0),
+  ('Clara Albuquerque Mendes', '1998-09-22', '700012345678918', 1);

@@ -1,0 +1,485 @@
+/* ============================================================
+   COMPONENTES DE DOMÍNIO
+   ------------------------------------------------------------
+   Nomenclatura BEM:
+     .bloco             -> o componente inteiro
+     .bloco__elemento   -> uma parte que só existe dentro dele
+     .bloco--modificador-> uma variação do bloco
+
+   Por que BEM? Porque o nome da classe responde sozinho a três
+   perguntas: de quem é, o que é, e em que estado está.
+   ============================================================ */
+
+/* ------------------------------------------------------------
+   BLOCO: patient-list
+   ------------------------------------------------------------ */
+.patient-list {
+  display: grid;
+  grid-template-columns: 1fr;
+  /* celular: 1 coluna */
+  gap: var(--espaco-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* ============================================================
+   TODO CSS-1 (Encontro 1, Prática 3)
+   Faça a lista virar 2 colunas a partir de 768px e 3 colunas
+   a partir de 1200px.
+
+   Dica: use `grid-template-columns: repeat(2, 1fr);` dentro de
+   uma media query `min-width`. Mobile-first: a media query
+   ACRESCENTA regra, nunca desfaz a anterior.
+   ============================================================ */
+
+/* João Carlos:
+  Criação de media queries para que a lista de pacientes se adapte a diferentes tamanhos de tela.
+  Referência: https://developer.mozilla.org/pt-BR/docs/Web/CSS/Guides/Media_queries/Using
+*/
+@media (min-width: 768px) {
+  .patient-list {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1200px) {
+  .patient-list {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+
+/* ------------------------------------------------------------
+   BLOCO: patient-card
+   ------------------------------------------------------------ */
+.patient-card {
+  background-color: var(--cor-superficie);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-md);
+  box-shadow: var(--sombra-1);
+  padding: var(--espaco-4);
+  transition: box-shadow 150ms ease;
+}
+
+.patient-card:hover {
+  box-shadow: var(--sombra-2);
+}
+
+.patient-card__name {
+  margin: 0 0 var(--espaco-1);
+  font-size: 1.0625rem;
+  font-weight: 700;
+}
+
+.patient-card__meta {
+  margin: 0;
+  color: var(--cor-texto-suave);
+  font-size: 0.875rem;
+}
+
+.patient-card__id {
+  font-family: var(--fonte-mono);
+  font-size: 0.8125rem;
+}
+
+/* ============================================================
+   TODO CSS-2 (Encontro 1, Prática 3)
+   Crie o modificador `.patient-card--inactive`.
+
+   Ele deve deixar claro, SEM depender só da cor, que o paciente
+   está inativo. Sugestões: fundo levemente acinzentado, opacidade
+   reduzida e borda tracejada.
+
+   Cor sozinha não comunica: 8% dos homens têm alguma deficiência
+   na percepção de cores. Sempre combine cor + forma ou cor + texto.
+   ============================================================ */
+
+/* João Carlos:
+  Criação do modificador .patient-card--inactive.
+  - Fundo acinzentado (var(--cor-fundo)): Utiliza o token existente de
+  fundo para diferenciar visualmente da superfície branca padrão dos
+  cartões ativos (--cor-superficie).
+  - Borda tracejada (border-style: dashed): Altera a forma/estilo do
+  contorno, garantindo diferenciação imediata.
+  - Opacidade reduzida (opacity: 0.75): Reforça a visualização
+  de um registro inativo.
+*/
+.patient-card--inactive {
+  background-color: var(--cor-fundo);
+  /* --cor-fundo já é um token disponivel no tokens.css*/
+  border-style: dashed;
+  opacity: 0.75;
+}
+
+
+/* ------------------------------------------------------------
+   BLOCO: status-badge
+   ------------------------------------------------------------ */
+.status-badge {
+  display: inline-block;
+  border-radius: 999px;
+  padding: var(--espaco-1) var(--espaco-3);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.status-badge--active {
+  background-color: var(--cor-marca-suave);
+  color: var(--cor-marca-escura);
+}
+
+.status-badge--inactive {
+  background-color: var(--cor-alerta-suave);
+  color: var(--cor-alerta-escura);
+}
+
+/* ------------------------------------------------------------
+   BLOCO: empty-state
+   ------------------------------------------------------------ */
+.empty-state {
+  background-color: var(--cor-superficie);
+  border: 1px dashed var(--cor-borda);
+  border-radius: var(--raio-md);
+  padding: var(--espaco-6);
+  text-align: center;
+  color: var(--cor-texto-suave);
+}
+
+.empty-state__title {
+  margin: 0 0 var(--espaco-2);
+  color: var(--cor-texto);
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+/* ------------------------------------------------------------
+   BLOCO: patient-detail
+   ------------------------------------------------------------ */
+.patient-detail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaco-5);
+}
+
+.patient-detail__nav {
+  display: flex;
+  align-items: center;
+  margin-bottom: var(--espaco-2);
+}
+
+.patient-detail__back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--espaco-2);
+  background-color: var(--cor-superficie);
+  color: var(--cor-texto-suave);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-sm);
+  padding: var(--espaco-2) var(--espaco-3);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 150ms ease;
+  text-decoration: none;
+}
+
+.patient-detail__back-btn:hover {
+  background-color: var(--cor-fundo);
+  color: var(--cor-texto);
+  border-color: var(--cor-texto-suave);
+}
+
+.patient-detail__header-card {
+  background-color: var(--cor-superficie);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-md);
+  box-shadow: var(--sombra-1);
+  padding: var(--espaco-5);
+}
+
+.patient-detail__title-group {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: var(--espaco-3);
+  margin-bottom: var(--espaco-3);
+}
+
+.patient-detail__name {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--cor-texto);
+}
+
+.patient-detail__meta-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--espaco-2);
+  color: var(--cor-texto-suave);
+  font-size: 0.9375rem;
+}
+
+@media (min-width: 576px) {
+  .patient-detail__meta-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.patient-detail__grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--espaco-5);
+  align-items: start;
+}
+
+@media (min-width: 992px) {
+  .patient-detail__grid {
+    grid-template-columns: 1.2fr 0.8fr;
+  }
+}
+
+.patient-detail__section-title {
+  margin: 0 0 var(--espaco-3);
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--cor-texto);
+}
+
+/* ------------------------------------------------------------
+   BLOCO: encounter-list
+   ------------------------------------------------------------ */
+.encounter-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaco-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* ------------------------------------------------------------
+   BLOCO: encounter-item (BEM - testado para telas a partir de 375px)
+   ------------------------------------------------------------ */
+.encounter-item {
+  background-color: var(--cor-superficie);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-md);
+  box-shadow: var(--sombra-1);
+  padding: var(--espaco-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaco-3);
+  transition: box-shadow 150ms ease;
+  word-break: break-word;
+}
+
+.encounter-item:hover {
+  box-shadow: var(--sombra-2);
+}
+
+.encounter-item__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--espaco-2);
+  border-bottom: 1px solid var(--cor-fundo);
+  padding-bottom: var(--espaco-2);
+}
+
+.encounter-item__date {
+  font-family: var(--fonte-mono);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--cor-texto-suave);
+}
+
+.encounter-item__id {
+  font-family: var(--fonte-mono);
+  font-size: 0.75rem;
+  color: var(--cor-texto-suave);
+  background-color: var(--cor-fundo);
+  padding: var(--espaco-1) var(--espaco-2);
+  border-radius: var(--raio-sm);
+}
+
+.encounter-item__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaco-2);
+}
+
+.encounter-item__label {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--cor-texto-suave);
+  margin: 0;
+}
+
+.encounter-item__complaint {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--cor-texto);
+  line-height: 1.4;
+}
+
+.encounter-item__notes-card {
+  background-color: var(--cor-fundo);
+  border-left: 3px solid var(--cor-marca);
+  border-radius: var(--raio-sm);
+  padding: var(--espaco-3);
+  margin-top: var(--espaco-1);
+}
+
+.encounter-item__notes-text {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--cor-texto);
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+/* ------------------------------------------------------------
+   BLOCO: encounter-form-card
+   ------------------------------------------------------------ */
+.encounter-form-card {
+  background-color: var(--cor-superficie);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-md);
+  box-shadow: var(--sombra-1);
+  padding: var(--espaco-4);
+}
+
+@media (min-width: 576px) {
+  .encounter-form-card {
+    padding: var(--espaco-5);
+  }
+}
+
+.encounter-form-card__title {
+  margin: 0 0 var(--espaco-3);
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--cor-texto);
+}
+
+/* ------------------------------------------------------------
+   BLOCO: form-alert-error
+   ------------------------------------------------------------ */
+.form-alert-error {
+  background-color: var(--cor-alerta-suave);
+  color: var(--cor-alerta-escura);
+  border: 1px solid var(--cor-alerta);
+  border-radius: var(--raio-sm);
+  padding: var(--espaco-3);
+  margin-bottom: var(--espaco-4);
+  font-size: 0.875rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: var(--espaco-2);
+}
+
+.patient-card__actions {
+  display: flex;
+  gap: var(--espaco-2);
+  margin-top: var(--espaco-3);
+}
+
+/* ------------------------------------------------------------
+   BLOCO: patient-modal (BEM)
+   ------------------------------------------------------------ */
+.patient-modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(18, 21, 26, 0.6);
+  backdrop-filter: blur(2px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--espaco-4);
+  z-index: 1050;
+  animation: modalFadeIn 150ms ease-out;
+}
+
+.patient-modal-dialog {
+  background-color: var(--cor-superficie);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-md);
+  box-shadow: var(--sombra-2);
+  width: 100%;
+  max-width: 520px;
+  max-height: 90vh;
+  overflow-y: auto;
+  animation: modalSlideUp 200ms ease-out;
+}
+
+.patient-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--espaco-4) var(--espaco-5);
+  border-bottom: 1px solid var(--cor-borda);
+}
+
+.patient-modal-title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--cor-texto);
+}
+
+.patient-modal-close {
+  background: transparent;
+  border: none;
+  font-size: 1.25rem;
+  line-height: 1;
+  color: var(--cor-texto-suave);
+  cursor: pointer;
+  padding: var(--espaco-1);
+  border-radius: var(--raio-sm);
+  transition: color 150ms ease, background-color 150ms ease;
+}
+
+.patient-modal-close:hover {
+  color: var(--cor-texto);
+  background-color: var(--cor-fundo);
+}
+
+.patient-modal-body {
+  padding: var(--espaco-5);
+}
+
+.patient-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--espaco-3);
+  margin-top: var(--espaco-5);
+}
+
+@keyframes modalFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes modalSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
