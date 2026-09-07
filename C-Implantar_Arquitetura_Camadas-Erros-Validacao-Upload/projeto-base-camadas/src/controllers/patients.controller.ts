@@ -26,6 +26,41 @@
  *   };
  * ============================================================
  */
+import type { Request, Response } from "express";
+import { patientsService } from "../services/patients.service.ts";
+
+export const patientsController = {
+  list(_req: Request, res: Response) {
+    const patients = patientsService.list();
+    res.status(200).json(patients);
+  },
+
+  getById(req: Request, res: Response) {
+    const patient = patientsService.getById(req.params.id as string);
+
+    if (!patient) {
+      res.status(404).json({ error: "Paciente nao encontrado." });
+      return;
+    }
+
+    res.status(200).json(patient);
+  },
+
+  create(req: Request, res: Response) {
+    try {
+      const created = patientsService.create(req.body);
+      res.status(201).json(created);
+    } catch (err: any) {
+      if (err.status) {
+        res.status(err.status).json({ error: err.message });
+        return;
+      }
+      throw err;
+    }
+  },
+};
+
+
 
 /**
  * ============================================================
