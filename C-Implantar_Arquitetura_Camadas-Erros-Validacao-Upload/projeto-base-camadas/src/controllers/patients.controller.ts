@@ -28,6 +28,8 @@
  */
 import type { Request, Response } from "express";
 import { patientsService } from "../services/patients.service.ts";
+import { UnprocessableEntityError } from "../errors/HttpError.ts";
+
 
 export const patientsController = {
   list(_req: Request, res: Response) {
@@ -37,38 +39,19 @@ export const patientsController = {
 
   getById(req: Request, res: Response) {
     const patient = patientsService.getById(req.params.id as string);
-
-    if (!patient) {
-      res.status(404).json({ error: "Paciente nao encontrado." });
-      return;
-    }
-
     res.status(200).json(patient);
   },
 
   create(req: Request, res: Response) {
-    try {
-      const created = patientsService.create(req.body);
-      res.status(201).json(created);
-    } catch (err: any) {
-      if (err.status) {
-        res.status(err.status).json({ error: err.message });
-        return;
-      }
-      throw err;
+    const created = patientsService.create(req.body);
+    res.status(201).json(created);
+  },
+
+  uploadPhoto(req: Request, res: Response) {
+    if (!req.file) {
+      throw new UnprocessableEntityError("Arquivo de foto nao enviado.");
     }
+    const patient = patientsService.setPhoto(req.params.id as string, req.file.filename);
+    res.status(200).json(patient);
   },
 };
-
-
-
-/**
- * ============================================================
- * TODO 13 (Encontro 2, continuacao) -- Controller de upload
- * ============================================================
- * uploadPhoto(req, res):
- *   - se !req.file -> throw new UnprocessableEntityError()
- *   - chama patientsService.setPhoto(req.params.id, req.file.filename)
- *   - responde 200 com o paciente atualizado
- * ============================================================
- */

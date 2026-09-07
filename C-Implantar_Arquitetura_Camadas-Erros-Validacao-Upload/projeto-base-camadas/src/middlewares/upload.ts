@@ -12,3 +12,26 @@
  * export const uploadPhoto = multer({ storage, limits, fileFilter });
  * ============================================================
  */
+
+import multer from "multer";
+import path from "path";
+import crypto from "crypto";
+import { UnprocessableEntityError } from "../errors/HttpError.ts";
+
+const storage = multer.diskStorage({
+    destination: "uploads/",
+    filename: (_req, file, cb) => cb(null, `${crypto.randomUUID()}${path.extname(file.originalname)}`),
+});
+
+const ALLOWED = ["image/jpeg", "image/png"];
+
+export const uploadPhoto = multer({
+    storage,
+    limits: { fileSize: 2 * 1024 * 1024 },
+    fileFilter: (_req, file, cb) => {
+        if (!ALLOWED.includes(file.mimetype)) {
+            return cb(new UnprocessableEntityError("Formato de arquivo invalido. Apenas JPEG e PNG sao permitidos."));
+        }
+        cb(null, true);
+    },
+});

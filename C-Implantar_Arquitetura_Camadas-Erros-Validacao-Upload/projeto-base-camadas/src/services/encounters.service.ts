@@ -14,6 +14,7 @@
  */
 
 import { db } from "../db/database.ts";
+import { BadRequestError, NotFoundError } from "../errors/HttpError.ts";
 
 export type EncounterRow = {
     id: number;
@@ -54,9 +55,9 @@ function patientExists(id: string): boolean {
 // Implementação do Service de Encounter
 export const encountersService = {
     // Lista os atendimentos de um paciente
-    list(patientId: string): Encounter[] | null {
+    list(patientId: string): Encounter[] {
         if (!patientExists(patientId)) {
-            return null;
+            throw new NotFoundError("Paciente nao encontrado.");
         }
 
         const rows = db
@@ -74,24 +75,19 @@ export const encountersService = {
     // Cria um atendimento para um paciente
     create(patientId: string, data: { startedAt: string; chiefComplaint: string; notes?: string | null }): Encounter {
         if (!patientExists(patientId)) {
-            const error = new Error("Paciente nao encontrado.") as Error & { status?: number };
-            error.status = 404;
-            throw error;
+            throw new NotFoundError("Paciente nao encontrado.");
         }
 
         const { startedAt, chiefComplaint, notes } = data ?? {};
 
         if (isBlank(chiefComplaint)) {
-            const error = new Error("O campo 'chiefComplaint' e obrigatorio.") as Error & { status?: number };
-            error.status = 400;
-            throw error;
+            throw new BadRequestError("O campo 'chiefComplaint' e obrigatorio.");
         }
 
         if (isBlank(startedAt) || !ISO_DATE_TIME.test(startedAt)) {
-            const error = new Error("O campo 'startedAt' e obrigatorio no formato AAAA-MM-DDTHH:MM.") as Error & { status?: number };
-            error.status = 400;
-            throw error;
+            throw new BadRequestError("O campo 'startedAt' e obrigatorio no formato AAAA-MM-DDTHH:MM.");
         }
+
 
         const result = db
             .prepare(

@@ -14,3 +14,19 @@
  * }
  * ============================================================
  */
+
+import type { Request, Response, NextFunction } from "express";
+
+import type { ZodSchema } from "zod";
+import { BadRequestError } from "../errors/HttpError.ts";
+
+export function validate(schema: ZodSchema) {
+    return (req: Request, _res: Response, next: NextFunction) => {
+        const result = schema.safeParse(req.body);
+        if (!result.success) {
+            throw new BadRequestError("Dados inválidos", result.error.flatten().fieldErrors);
+        }
+        req.body = result.data;
+        next();
+    };
+}

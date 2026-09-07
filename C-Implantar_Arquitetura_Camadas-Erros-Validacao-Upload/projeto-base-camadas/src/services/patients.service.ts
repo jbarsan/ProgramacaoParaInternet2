@@ -30,6 +30,7 @@
  * ============================================================
  */
 import { db } from "../db/database.ts";
+import { BadRequestError, ConflictError, NotFoundError } from "../errors/HttpError.ts";
 
 export type PatientRow = {
     id: number;
@@ -92,13 +93,13 @@ export const patientsService = {
     },
 
     // Busca um paciente pelo id
-    getById(id: string | number): Patient | null {
+    getById(id: string | number): Patient {
         const row = db
             .prepare("SELECT id, name, birth_date, national_id, active, photo_path FROM patients WHERE id = ?")
             .get(id) as PatientRow | undefined;
 
         if (!row) {
-            return null;
+            throw new NotFoundError("Paciente nao encontrado.");
         }
 
         return toPatientJson(row);
@@ -108,9 +109,7 @@ export const patientsService = {
     create(data: { name: string; birthDate: string; nationalId: string }): Patient {
         const problem = validatePatientInput(data);
         if (problem) {
-            const error = new Error(problem) as Error & { status?: number };
-            error.status = 400;
-            throw error;
+            throw new BadRequestError(problem);
         }
 
         const { name, birthDate, nationalId } = data;
@@ -120,9 +119,7 @@ export const patientsService = {
             .get(nationalId.trim());
 
         if (duplicate) {
-            const error = new Error("Ja existe um paciente com este CNS.") as Error & { status?: number };
-            error.status = 409;
-            throw error;
+            throw new ConflictError("Ja existe um paciente com este CNS.");
         }
 
         const result = db
@@ -138,7 +135,24 @@ export const patientsService = {
 
         return toPatientJson(created);
     },
+
+
+    // Upload de foto do paciente
+    setPhoto(id: string | number, filename: string): Patient {
+        patientsService.getById(id);
+
+        const photoPath = `/uploads/${filename}`;
+        db.prepare("UPDATE patients SET photo_path = ? WHERE id = ?").run(photoPath, id);
+
+        const updated = db
+            .prepare("SELECT id, name, birth_date, national_id, active, photo_path FROM patients WHERE id = ?")
+            .get(id) as PatientRow;
+
+        return toPatientJson(updated);
+    },
 };
+
+
 
 
 /**
@@ -152,3 +166,5 @@ export const patientsService = {
  *   - devolve o paciente atualizado (toPatientJson)
  * ============================================================
  */
+
+// setPhoto(id, filename): Criado dentro do service do patient para manter a separação das camadas.

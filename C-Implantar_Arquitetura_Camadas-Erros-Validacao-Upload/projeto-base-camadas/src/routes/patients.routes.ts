@@ -28,12 +28,16 @@
 
 import { Router } from "express";
 import { patientsController } from "../controllers/patients.controller.ts";
+import { validate } from "../middlewares/validate.ts";
+import { createPatientSchema } from "../validation/patients.schemas.ts";
+import { uploadPhoto } from "../middlewares/upload.ts";
 
 export const patientsRouter = Router();
 
 patientsRouter.get("/", patientsController.list);
 patientsRouter.get("/:id", patientsController.getById);
-patientsRouter.post("/", patientsController.create);
+patientsRouter.post("/", validate(createPatientSchema), patientsController.create);
+
 
 /**
  * ============================================================
@@ -45,3 +49,4 @@ patientsRouter.post("/", patientsController.create);
  *   patientsRouter.post("/:id/photo", uploadPhoto.single("photo"), patientsController.uploadPhoto);
  * ============================================================
  */
+patientsRouter.post("/:id/photo", uploadPhoto.single("photo"), patientsController.uploadPhoto);

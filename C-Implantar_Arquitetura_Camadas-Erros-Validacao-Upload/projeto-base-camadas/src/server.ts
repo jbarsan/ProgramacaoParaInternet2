@@ -253,6 +253,10 @@ app.use("/api/patients/:id/encounters", encountersRouter);
    app.use(errorHandler);
  ============================================================ */
 
+import { errorHandler } from "./middlewares/errorHandler.ts";
+
+app.use(errorHandler);
+
 app.listen(PORT, () => {
   console.log(`Mini-Prontuario no ar em http://localhost:${PORT}`);
 });
