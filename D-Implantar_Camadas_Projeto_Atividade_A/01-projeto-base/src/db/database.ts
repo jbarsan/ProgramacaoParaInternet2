@@ -15,4 +15,3 @@ export const db = new Database(DATABASE_FILE);
 
 // SQLite nao aplica chave estrangeira por padrao. Isso liga a verificacao.
 db.pragma("foreign_keys = ON");
-
