@@ -19,6 +19,7 @@ import type { CreateEncounterInput } from "../validation/encounters.schemas";
 export type Encounter = {
   id: number;
   patientId: number;
+  professionalId?: number | null;
   startedAt: string;
   chiefComplaint: string;
   notes: string | null;
@@ -28,6 +29,7 @@ export type Encounter = {
 type EncounterRow = {
   id: number;
   patient_id: number;
+  professional_id?: number | null;
   started_at: string;
   chief_complaint: string;
   notes: string | null;
@@ -38,6 +40,7 @@ function toEncounter(row: EncounterRow): Encounter {
   return {
     id: row.id,
     patientId: row.patient_id,
+    professionalId: row.professional_id ?? null,
     startedAt: row.started_at,
     chiefComplaint: row.chief_complaint,
     notes: row.notes,
@@ -53,7 +56,7 @@ const SELECT = "SELECT id, patient_id, started_at, chief_complaint, notes FROM e
 export interface EncountersRepository {
   findByPatientId(patientId: number): Promise<Encounter[]> | Encounter[];
   findById(id: number): Promise<Encounter | null> | Encounter | null;
-  create(patientId: number, input: CreateEncounterInput): Promise<Encounter> | Encounter;
+  create(patientId: number, input: CreateEncounterInput, professionalId?: number): Promise<Encounter> | Encounter;
 }
 
 /**
@@ -101,6 +104,7 @@ export class PrismaEncountersRepository implements EncountersRepository {
     return rows.map((row) => ({
       id: row.id,
       patientId: row.patientId,
+      professionalId: row.professionalId,
       startedAt: row.startedAt,
       chiefComplaint: row.chiefComplaint,
       notes: row.notes,
@@ -115,16 +119,18 @@ export class PrismaEncountersRepository implements EncountersRepository {
     return {
       id: row.id,
       patientId: row.patientId,
+      professionalId: row.professionalId,
       startedAt: row.startedAt,
       chiefComplaint: row.chiefComplaint,
       notes: row.notes,
     };
   }
 
-  async create(patientId: number, input: CreateEncounterInput): Promise<Encounter> {
+  async create(patientId: number, input: CreateEncounterInput, professionalId?: number): Promise<Encounter> {
     const row = await prisma.encounter.create({
       data: {
         patientId,
+        professionalId: professionalId ?? null,
         startedAt: input.startedAt,
         chiefComplaint: input.chiefComplaint,
         notes: input.notes ?? null,
@@ -133,6 +139,7 @@ export class PrismaEncountersRepository implements EncountersRepository {
     return {
       id: row.id,
       patientId: row.patientId,
+      professionalId: row.professionalId,
       startedAt: row.startedAt,
       chiefComplaint: row.chiefComplaint,
       notes: row.notes,

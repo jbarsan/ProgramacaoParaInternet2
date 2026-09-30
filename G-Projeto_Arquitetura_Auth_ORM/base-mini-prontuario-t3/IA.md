@@ -333,3 +333,110 @@ GATE VERDE ✔ — pronto para PR (cole ESTA saída como evidência)
 ```
 - **Revisão adversarial** (quando houve): 
 - **O que EU decidi** (a parte que não foi delegada): 
+
+---
+
+Tarefa: Trilha AUTH: Identidade, Autenticação e Permissões (AUTH-1 a AUTH-8)
+Trilha: AUTH
+Rota:
+chat|agente: agente
+- **Ferramenta/modelo :** Gemini 3.8 Flash (Medium)
+- **Prompt (chat: C-P-T-R-F-A):**
+Contexto:
+Você está trabalhando em um projeto Node/TS estruturado no padrão Port & Adapter. Os arquivos de referência para esta tarefa são @AGENTS.md, @INVARIANTES.md, errors/HttpError.ts, routes/auth.routes.ts, validation/auth.schemas.ts, middlewares/auth.ts
+
+Papel:
+Segue o mesmo do comando anterior.
+
+Tarefa:
+Trilha AUTH: Identidade, Autenticação e Permissões (AUTH-1 a AUTH-5)
+Construir o sistema de autenticação e controle de acesso baseado em papéis (RBAC) e regras de domínio da aplicação, blindando o sistema contra os ataques de OWASP (A01 Broken Access Control e A07 Identification/Authentication Failures) e habilitando o frontend completo. Todos os detalhes estão no arquivo README.md, seção "Trilha AUTH — identidade e permissão".
+
+Restrições:
+Segue o mesmo do comando anterior.
+
+Formato:
+Segue o mesmo do comando anterior.
+
+Aceitação (Done when):
+   - `npm test`: testes de fumaça da API + testes de ataque OWASP + setup de registro).
+   - `npm run gate`: **`GATE VERDE ✔`** em todas as etapas.
+- **Arquivos editados?**:
+  - `src/errors/HttpError.ts`: criação das classes `UnauthorizedError` (401) e `ForbiddenError` (403) respeitando o contrato `{ error: { message, statusCode, details } }`.
+  - `prisma/schema.prisma`: adição do modelo `User` (id, name, email único, passwordHash mapeado para `password_hash`, role e relação 1:N com `Encounter`) e campo `professionalId` (mapeado para `professional_id`) no modelo `Encounter`. Executada a migration `20260930222659_add_users_and_professional_id`.
+  - `src/validation/auth.schemas.ts`: criação dos schemas Zod `registerSchema` (nome, e-mail válido, senha mínima de 8 caracteres, papel enum 'admin'|'profissional'|'recepcao') e `loginSchema` (e-mail e senha sem validação de tamanho mínimo para evitar enumeração de credenciais).
+  - `src/repositories/users.repository.ts`: interface `UsersRepository` (port) com `findByEmail`, `findById` e `create`, e implementação `PrismaUsersRepository` (adapter).
+  - `src/services/auth.service.ts`: lógica de negócio de autenticação com hash e verificação Argon2, geração de JWT assinado com `JWT_SECRET`, proteção contra enumeração (mensagens genéricas de credenciais inválidas) e verificação de e-mails duplicados com `ConflictError` (409).
+  - `src/controllers/auth.controller.ts`: controllers HTTP de autenticação (`register`, `login`, `me`).
+  - `src/routes/auth.routes.ts`: rotas `POST /register`, `POST /login` e `GET /me` (protegida por `requireAuth`).
+  - `src/middlewares/auth.ts`: middleware `requireAuth` para extração e validação do token JWT no header `Authorization: Bearer <token>`, e middleware `requireRole` para verificação de permissões RBAC. Isolamento do `jwt.verify` fora do ciclo de `next()` para evitar captura indevida de exceções de downstream.
+  - `src/repositories/encounters.repository.ts`, `src/services/encounters.service.ts`, `src/controllers/encounters.controller.ts` e `src/routes/encounters.routes.ts`: persistência do `professionalId` do usuário autenticado na criação do atendimento (`Encounter`), protegendo a rota de criação para os papéis `admin` e `profissional`.
+  - `src/services/medications.service.ts` e `src/routes/medications.routes.ts`: aplicação da regra de domínio da matriz de permissões (ATAQUE 6) onde somente o profissional que registrou o atendimento pode prescrever medicamentos, lançando `ForbiddenError` (403) caso outro profissional tente prescrever.
+  - `tests/auth.attacks.test.ts`: ajuste síncrono no wrapper `quandoAuthExistir` com `t.skip` dinâmico para acordar os testes de ataque OWASP automaticamente com a rota de autenticação ativa.
+- **Evidência de pronto:**
+```
+$ npm run gate
+npm notice run mini-prontuario-t3@3.0.0 gate
+npm notice run bash gate.sh
+
+──────────────────────────────────────────────
+▶ 1/4 Tipos (tsc --noEmit)
+──────────────────────────────────────────────
+npm notice run mini-prontuario-t3@3.0.0 npx
+npm notice run 'tsc' --noEmit
+✔ tipos ok
+
+──────────────────────────────────────────────
+▶ 2/4 Arquitetura (dependency-cruiser)
+──────────────────────────────────────────────
+npm notice run mini-prontuario-t3@3.0.0 npx
+npm notice run 'depcruise' src --config .dependency-cruiser.cjs
+
+✔ no dependency violations found (38 modules, 82 dependencies cruised)
+
+✔ regras de dependência respeitadas
+
+──────────────────────────────────────────────
+▶ 3/4 Testes de API (node:test, servidor real em porta efêmera)
+──────────────────────────────────────────────
+✔ GET /api/health responde 200 ok (43.570601ms)
+✔ GET /api/patients devolve lista em camelCase (formato do banco não vaza) (18.495941ms)
+✔ GET /api/patients/:id inexistente -> 404 no contrato de erro (9.776964ms)
+✔ POST /api/patients válido -> 201 com id gerado (33.422981ms)
+✔ POST /api/patients inválido -> 400 com details por campo (Zod) (3.976061ms)
+✔ POST /api/patients com CNS duplicado -> 409 (invariante N1) (23.005638ms)
+✔ Encounters: lista do seed e criação -> 200/201; paciente fantasma -> 404 (27.996439ms)
+✔ Medications: lista e criação aninhadas no encounter -> 200/201; encounter fantasma -> 404 (24.473811ms)
+✔ Upload: PNG pequeno -> 200 com photoUrl; sem arquivo -> 422 (23.153354ms)
+✔ Upload: mimetype proibido -> 422 mesmo com extensão .jpg (filtro por conteúdo declarado) (4.935021ms)
+✔ setup: register dos dois papéis funciona (201 ou 409 se já existem) (191.428761ms)
+✔ ATAQUE 1 — sem token: POST encounter -> 401 (3.095011ms)
+✔ ATAQUE 2 — token ADULTERADO: assinatura invalida -> 401 (59.596071ms)
+✔ ATAQUE 3 — papel errado: recepcao tenta prescrever -> 403 (invariante N2) (50.633028ms)
+✔ ATAQUE 4 — recepcao consegue o que a matriz permite: criar paciente -> 201 (54.363602ms)
+✔ ATAQUE 5 — login com senha errada -> 401 SEM revelar qual campo errou (44.339734ms)
+✔ ATAQUE 6 — regra de domínio: profissional B não prescreve no atendimento do profissional A (146.253386ms)
+ℹ tests 17
+ℹ suites 0
+ℹ pass 17
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 890.954468
+✔ testes verdes
+
+──────────────────────────────────────────────
+▶ 4/4 Segredos no repositório (gitleaks)
+──────────────────────────────────────────────
+7:34PM INF 18 commits scanned.
+7:34PM INF scanned ~1530027 bytes (1.53 MB) in 190ms
+7:34PM INF no leaks found
+✔ nenhum segredo detectado
+
+==============================================
+GATE VERDE ✔ — pronto para PR (cole ESTA saída como evidência)
+```
+- **Revisão adversarial** (quando houve): O wrapper `quandoAuthExistir` em `tests/auth.attacks.test.ts` lia a flag booleana de forma estática no momento do registro do módulo (antes da execução do hook assíncrono `before`), mantendo os testes em `skip`. Corrigido utilizando avaliação em tempo de execução via `t.skip()`. Além disso, no middleware `requireAuth`, o callback `next()` estava localizado dentro do bloco `try/catch` de validação do JWT, fazendo com que erros de autorização (como `ForbiddenError` 403 de `requireRole`) fossem incorretamente capturados e mascarados como `UnauthorizedError` 401; a chamada a `next()` foi devidamente isolada fora do `try/catch`.
+- **O que EU decidi** (a parte que não foi delegada): A modelagem da relação entre `Encounter.professionalId` e `User.id` no schema do Prisma e banco de dados, e a implementação da regra de domínio em `medications.service.ts` para garantir que apenas o profissional responsável pelo atendimento possa prescrever medicamentos.
+

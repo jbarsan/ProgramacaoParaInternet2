@@ -69,3 +69,15 @@ export class PayloadTooLargeError extends HttpError {
    Crie aqui `UnauthorizedError` (401) e `ForbiddenError` (403),
    seguindo exatamente o padrão das classes acima.
    ------------------------------------------------------------ */
+export class UnauthorizedError extends HttpError {
+  constructor(message = "Não autorizado.", details: unknown = null) {
+    super(401, message, details);
+  }
+}
+
+export class ForbiddenError extends HttpError {
+  constructor(message = "Acesso negado.", details: unknown = null) {
+    super(403, message, details);
+  }
+}
+

@@ -42,9 +42,10 @@ export async function getEncounterById(
 export async function createEncounter(
   patientId: number,
   input: CreateEncounterInput,
+  professionalId?: number,
   repository: EncountersRepository = defaultEncountersRepository,
 ) {
   await getPatientById(patientId);
 
-  return await repository.create(patientId, input);
+  return await repository.create(patientId, input, professionalId);
 }

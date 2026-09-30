@@ -14,4 +14,32 @@
  * ------------------------------------------------------------ */
 import { z } from "zod";
 
-// (escreva os schemas aqui)
+export const registerSchema = z.object({
+  name: z
+    .string({ error: "O campo 'name' é obrigatório." })
+    .trim()
+    .min(1, "O campo 'name' não pode ser vazio."),
+  email: z
+    .string({ error: "O campo 'email' é obrigatório." })
+    .email("E-mail inválido.")
+    .trim(),
+  password: z
+    .string({ error: "O campo 'password' é obrigatório." })
+    .min(8, "A senha deve ter no mínimo 8 caracteres."),
+  role: z.enum(["admin", "profissional", "recepcao"], {
+    error: "Papel inválido.",
+  }),
+});
+
+export const loginSchema = z.object({
+  email: z
+    .string({ error: "O campo 'email' é obrigatório." })
+    .email("E-mail inválido.")
+    .trim(),
+  password: z
+    .string({ error: "O campo 'password' é obrigatório." })
+    .min(1, "O campo 'password' não pode ser vazio."),
+});
+
+export type RegisterInput = z.infer<typeof registerSchema>;
+export type LoginInput = z.infer<typeof loginSchema>;

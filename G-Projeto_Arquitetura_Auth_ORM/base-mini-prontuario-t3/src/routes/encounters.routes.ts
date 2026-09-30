@@ -7,9 +7,16 @@
 import { Router } from "express";
 import * as encountersController from "../controllers/encounters.controller";
 import { validate } from "../middlewares/validate";
+import { requireAuth, requireRole } from "../middlewares/auth";
 import { createEncounterSchema } from "../validation/encounters.schemas";
 
 export const encountersRouter = Router({ mergeParams: true });
 
 encountersRouter.get("/", encountersController.listByPatient);
-encountersRouter.post("/", validate(createEncounterSchema), encountersController.create);
+encountersRouter.post(
+  "/",
+  requireAuth,
+  requireRole("admin", "profissional"),
+  validate(createEncounterSchema),
+  encountersController.create,
+);

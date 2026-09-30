@@ -104,51 +104,52 @@ Content-Type: image/jpeg
 ### ==========================================================
 
 ### A1. Registrar profissional -> 201 (senha JAMAIS volta na resposta)
-# POST {{host}}/api/auth/register
-# Content-Type: application/json
-#
-# {
-#   "name": "Dra. Lívia Andrade",
-#   "email": "livia@clinica.local",
-#   "password": "correto-cavalo-bateria-grampo",
-#   "role": "profissional"
-# }
+POST {{host}}/api/auth/register
+Content-Type: application/json
+
+{
+  "name": "Recepcao 1",
+  "email": "recepcao1@clinical.local",
+  "password": "correto-cavalo-bateria-grampo",
+  "role": "recepcao"
+}
+
 
 ### A2. Login -> 200 com { token, user }. Copie o token para as próximas.
-# POST {{host}}/api/auth/login
-# Content-Type: application/json
-#
-# {
-#   "email": "livia@clinica.local",
-#   "password": "correto-cavalo-bateria-grampo"
-# }
+POST {{host}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "livia@clinica.local",
+  "password": "correto-cavalo-bateria-grampo"
+}
 
 ### A3. ATAQUE — sem token: registrar atendimento -> 401
-# POST {{host}}/api/patients/1/encounters
-# Content-Type: application/json
-#
-# { "startedAt": "2026-09-14T10:00", "chiefComplaint": "Sem crachá" }
+POST {{host}}/api/patients/1/encounters
+Content-Type: application/json
+
+{ "startedAt": "2026-09-14T10:00", "chiefComplaint": "Sem crachá" }
 
 ### A4. ATAQUE — token ADULTERADO (troque 2 letras do meio) -> 401
-# POST {{host}}/api/patients/1/encounters
-# Authorization: Bearer COLE.O-TOKEN-ADULTERADO.AQUI
-# Content-Type: application/json
-#
-# { "startedAt": "2026-09-14T10:00", "chiefComplaint": "Crachá falsificado" }
+POST {{host}}/api/patients/1/encounters
+Authorization: Bearer COLE.O-TOKEN-ADULTERADO.AQUI
+Content-Type: application/json
+
+{ "startedAt": "2026-09-14T10:00", "chiefComplaint": "Crachá falsificado" }
 
 ### A5. ATAQUE — papel errado: recepcao tenta prescrever -> 403 (não 401!)
-# POST {{host}}/api/encounters/1/medications
-# Authorization: Bearer TOKEN-DA-RECEPCAO
-# Content-Type: application/json
-#
-# { "medication": "Não deveria", "dosage": "passar" }
+POST {{host}}/api/encounters/1/medications
+Authorization: Bearer TOKEN-DA-RECEPCAO
+Content-Type: application/json
+
+{ "medication": "Não deveria", "dosage": "passar" }
 
 ### A6. ATAQUE — login com senha errada -> 401 com mensagem que NÃO
 ###     revela se o e-mail existe (enumeração de usuários)
-# POST {{host}}/api/auth/login
-# Content-Type: application/json
-#
-# { "email": "livia@clinica.local", "password": "senha-errada" }
+POST {{host}}/api/auth/login
+Content-Type: application/json
+
+{ "email": "livia@clinica.local", "password": "senha-errada" }
 
 ### A7. Token EXPIRADO -> 401. Para testar: JWT_EXPIRES_IN=5s no .env,
 ###     faça login, espere 6 segundos, repita a A2 com o token velho.
