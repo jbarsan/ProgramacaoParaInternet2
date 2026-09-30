@@ -1,4 +1,4 @@
-Tarefa: Extração do PatientsRepository
+## Tarefa: Extração do PatientsRepository
 Trilha: ARQ
 Rota:
 chat|agente: agente
@@ -83,7 +83,7 @@ npm notice run tsx --test tests/*.test.ts
 
 ---
 
-Tarefa: Extração do EncountersRepository (ARQ-2) e MedicationsRepository (ARQ-3)
+## Tarefa: Extração do EncountersRepository (ARQ-2) e MedicationsRepository (ARQ-3)
 Trilha: ARQ
 Rota:
 chat|agente: agente
@@ -135,7 +135,7 @@ npm notice run tsx --test tests/*.test.ts
 
 ---
 
-Tarefa: Correção de violações de arquitetura (ARQ-4 e ARQ-5)
+## Tarefa: Correção de violações de arquitetura (ARQ-4 e ARQ-5)
 Trilha: ARQ
 Rota:
 chat|agente: agente
@@ -235,7 +235,7 @@ GATE VERDE ✔ — pronto para PR (cole ESTA saída como evidência)
 
 ---
 
-Tarefa: Trilha ORM: Migração para o Prisma ORM (ORM-1 a ORM-5)
+## Tarefa: Trilha ORM: Migração para o Prisma ORM (ORM-1 a ORM-5)
 Trilha: ORM
 Rota:
 chat|agente: agente
@@ -336,7 +336,7 @@ GATE VERDE ✔ — pronto para PR (cole ESTA saída como evidência)
 
 ---
 
-Tarefa: Trilha AUTH: Identidade, Autenticação e Permissões (AUTH-1 a AUTH-8)
+## Tarefa: Trilha AUTH: Identidade, Autenticação e Permissões (AUTH-1 a AUTH-8)
 Trilha: AUTH
 Rota:
 chat|agente: agente
