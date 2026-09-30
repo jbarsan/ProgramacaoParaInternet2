@@ -3,7 +3,8 @@
  * Repositório de Encounter — Camada Repository (Port & Adapter)
  * ------------------------------------------------------------
  * Porta (interface): EncountersRepository
- * Adaptador (implementação SQLite): SqliteEncountersRepository
+ * Adaptador SQLite: SqliteEncountersRepository
+ * Adaptador Prisma: PrismaEncountersRepository
  *
  * Responsável pelo acesso aos dados de atendimentos e pela
  * tradução snake_case (banco) -> camelCase (aplicação).
@@ -11,6 +12,7 @@
  * ============================================================
  */
 import { db } from "../database";
+import { prisma } from "./prisma";
 import type { CreateEncounterInput } from "../validation/encounters.schemas";
 
 /** Representação de Encounter no domínio da aplicação (camelCase). */
@@ -49,14 +51,13 @@ const SELECT = "SELECT id, patient_id, started_at, chief_complaint, notes FROM e
  * O Service depende apenas deste contrato abstrato.
  */
 export interface EncountersRepository {
-  findByPatientId(patientId: number): Encounter[];
-  findById(id: number): Encounter | null;
-  create(patientId: number, input: CreateEncounterInput): Encounter;
+  findByPatientId(patientId: number): Promise<Encounter[]> | Encounter[];
+  findById(id: number): Promise<Encounter | null> | Encounter | null;
+  create(patientId: number, input: CreateEncounterInput): Promise<Encounter> | Encounter;
 }
 
 /**
- * Implementação SQLite de EncountersRepository (o Adapter).
- * Único ponto onde mora o SQL de atendimentos e o acesso ao driver do banco.
+ * Implementação SQLite de EncountersRepository (o Adapter legacy).
  */
 export class SqliteEncountersRepository implements EncountersRepository {
   findByPatientId(patientId: number): Encounter[] {
@@ -88,5 +89,56 @@ export class SqliteEncountersRepository implements EncountersRepository {
   }
 }
 
-/** Instância padrão para uso padrão nos services. */
-export const defaultEncountersRepository = new SqliteEncountersRepository();
+/**
+ * Implementação Prisma de EncountersRepository (Adapter ORM).
+ */
+export class PrismaEncountersRepository implements EncountersRepository {
+  async findByPatientId(patientId: number): Promise<Encounter[]> {
+    const rows = await prisma.encounter.findMany({
+      where: { patientId },
+      orderBy: { startedAt: "desc" },
+    });
+    return rows.map((row) => ({
+      id: row.id,
+      patientId: row.patientId,
+      startedAt: row.startedAt,
+      chiefComplaint: row.chiefComplaint,
+      notes: row.notes,
+    }));
+  }
+
+  async findById(id: number): Promise<Encounter | null> {
+    const row = await prisma.encounter.findUnique({
+      where: { id },
+    });
+    if (!row) return null;
+    return {
+      id: row.id,
+      patientId: row.patientId,
+      startedAt: row.startedAt,
+      chiefComplaint: row.chiefComplaint,
+      notes: row.notes,
+    };
+  }
+
+  async create(patientId: number, input: CreateEncounterInput): Promise<Encounter> {
+    const row = await prisma.encounter.create({
+      data: {
+        patientId,
+        startedAt: input.startedAt,
+        chiefComplaint: input.chiefComplaint,
+        notes: input.notes ?? null,
+      },
+    });
+    return {
+      id: row.id,
+      patientId: row.patientId,
+      startedAt: row.startedAt,
+      chiefComplaint: row.chiefComplaint,
+      notes: row.notes,
+    };
+  }
+}
+
+/** Instância padrão configurada para o repositório Prisma. */
+export const defaultEncountersRepository: EncountersRepository = new PrismaEncountersRepository();

@@ -3,7 +3,8 @@
  * Repositório de MedicationRequest — Camada Repository (Port & Adapter)
  * ------------------------------------------------------------
  * Porta (interface): MedicationsRepository
- * Adaptador (implementação SQLite): SqliteMedicationsRepository
+ * Adaptador SQLite: SqliteMedicationsRepository
+ * Adaptador Prisma: PrismaMedicationsRepository
  *
  * Responsável pelo acesso aos dados de medicamentos/prescrições
  * e pela tradução snake_case (banco) -> camelCase (aplicação).
@@ -11,6 +12,7 @@
  * ============================================================
  */
 import { db } from "../database";
+import { prisma } from "./prisma";
 import type { CreateMedicationInput } from "../validation/medications.schemas";
 
 /** Representação de Medication no domínio da aplicação (camelCase). */
@@ -46,14 +48,13 @@ const SELECT = "SELECT id, encounter_id, medication, dosage FROM medication_requ
  * O Service depende apenas deste contrato abstrato.
  */
 export interface MedicationsRepository {
-  findByEncounterId(encounterId: number): Medication[];
-  findById(id: number): Medication | null;
-  create(encounterId: number, input: CreateMedicationInput): Medication;
+  findByEncounterId(encounterId: number): Promise<Medication[]> | Medication[];
+  findById(id: number): Promise<Medication | null> | Medication | null;
+  create(encounterId: number, input: CreateMedicationInput): Promise<Medication> | Medication;
 }
 
 /**
- * Implementação SQLite de MedicationsRepository (o Adapter).
- * Único ponto onde mora o SQL de prescrições e o acesso ao driver do banco.
+ * Implementação SQLite de MedicationsRepository (o Adapter legacy).
  */
 export class SqliteMedicationsRepository implements MedicationsRepository {
   findByEncounterId(encounterId: number): Medication[] {
@@ -85,5 +86,52 @@ export class SqliteMedicationsRepository implements MedicationsRepository {
   }
 }
 
-/** Instância padrão para uso padrão nos services. */
-export const defaultMedicationsRepository = new SqliteMedicationsRepository();
+/**
+ * Implementação Prisma de MedicationsRepository (Adapter ORM).
+ */
+export class PrismaMedicationsRepository implements MedicationsRepository {
+  async findByEncounterId(encounterId: number): Promise<Medication[]> {
+    const rows = await prisma.medicationRequest.findMany({
+      where: { encounterId },
+      orderBy: { id: "asc" },
+    });
+    return rows.map((row) => ({
+      id: row.id,
+      encounterId: row.encounterId,
+      medication: row.medication,
+      dosage: row.dosage,
+    }));
+  }
+
+  async findById(id: number): Promise<Medication | null> {
+    const row = await prisma.medicationRequest.findUnique({
+      where: { id },
+    });
+    if (!row) return null;
+    return {
+      id: row.id,
+      encounterId: row.encounterId,
+      medication: row.medication,
+      dosage: row.dosage,
+    };
+  }
+
+  async create(encounterId: number, input: CreateMedicationInput): Promise<Medication> {
+    const row = await prisma.medicationRequest.create({
+      data: {
+        encounterId,
+        medication: input.medication,
+        dosage: input.dosage,
+      },
+    });
+    return {
+      id: row.id,
+      encounterId: row.encounterId,
+      medication: row.medication,
+      dosage: row.dosage,
+    };
+  }
+}
+
+/** Instância padrão configurada para o repositório Prisma. */
+export const defaultMedicationsRepository: MedicationsRepository = new PrismaMedicationsRepository();

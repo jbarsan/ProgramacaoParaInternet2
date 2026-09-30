@@ -11,21 +11,21 @@ import {
   defaultMedicationsRepository,
 } from "../repositories/medications.repository";
 
-export function listMedicationsByEncounter(
+export async function listMedicationsByEncounter(
   encounterId: number,
   repository: MedicationsRepository = defaultMedicationsRepository,
 ) {
-  getEncounterById(encounterId); // 404 se o atendimento não existe
+  await getEncounterById(encounterId); // 404 se o atendimento não existe
 
-  return repository.findByEncounterId(encounterId);
+  return await repository.findByEncounterId(encounterId);
 }
 
-export function createMedication(
+export async function createMedication(
   encounterId: number,
   input: CreateMedicationInput,
   repository: MedicationsRepository = defaultMedicationsRepository,
 ) {
-  getEncounterById(encounterId);
+  await getEncounterById(encounterId);
 
-  return repository.create(encounterId, input);
+  return await repository.create(encounterId, input);
 }

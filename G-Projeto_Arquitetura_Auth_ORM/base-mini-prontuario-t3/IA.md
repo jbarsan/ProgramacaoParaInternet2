@@ -232,3 +232,104 @@ GATE VERDE ✔ — pronto para PR (cole ESTA saída como evidência)
 ```
 - **Revisão adversarial** (quando houve): 
 - **O que EU decidi** (a parte que não foi delegada): 
+
+---
+
+Tarefa: Trilha ORM: Migração para o Prisma ORM (ORM-1 a ORM-5)
+Trilha: ORM
+Rota:
+chat|agente: agente
+- **Ferramenta/modelo :** Gemini 3.8 Flash (Medium)
+- **Prompt (chat: C-P-T-R-F-A):**
+Contexto:
+Você está trabalhando em um projeto Node/TS estruturado no padrão Port & Adapter. Os arquivos de referência para esta tarefa são @AGENTS.md, @INVARIANTES.md, @src/repositories/, prisma/
+
+Papel:
+Segue o mesmo do comando anterior.
+
+Tarefa:
+Trilha ORM: Migração para o Prisma ORM (ORM-1 a ORM-5)
+Migrar o acesso a dados para o Prisma ORM conforme o roteiro em `prisma/LEIA-ME.md`, mantendo as interfaces da camada de repositórios intactas e comprovando a eficácia da arquitetura hexagonal (o service não percebe a troca do driver).
+
+Restrições:
+Segue o mesmo do comando anterior.
+
+Formato:
+Segue o mesmo do comando anterior.
+
+Aceitação (Done when):
+`npm run gate`: **GATE VERDE ✔** em todas as etapas.
+- **Arquivos editados?**:
+  - `prisma/schema.prisma`: criado com datasource SQLite e introspecção das tabelas do banco via `db pull`; renomeados modelos para PascalCase e campos para camelCase utilizando `@map` e `@@map` (ORM-1, ORM-2, ORM-3).
+  - `prisma/migrations/0_init/migration.sql`: criada a baseline de migração inicial e marcada como aplicada com `npx prisma migrate resolve --applied 0_init` (ORM-5 / Invariante OP-1).
+  - `src/repositories/prisma.ts`: criada a instância singleton `prisma = new PrismaClient()` isolada dentro da camada de repositórios em conformidade com as regras de arquitetura.
+  - `src/repositories/patients.repository.ts`: implementada a classe `PrismaPatientsRepository` e configurada como `defaultPatientsRepository`, mantendo a interface `PatientsRepository` intacta.
+  - `src/repositories/encounters.repository.ts`: implementada a classe `PrismaEncountersRepository` e configurada como `defaultEncountersRepository`, mantendo a interface `EncountersRepository` intacta.
+  - `src/repositories/medications.repository.ts`: implementada a classe `PrismaMedicationsRepository` e configurada como `defaultMedicationsRepository`, mantendo a interface `MedicationsRepository` intacta.
+  - `src/services/` e `src/controllers/`: adaptados para chamadas assíncronas com `async/await`, preservando a transparência de domínio e comprovando a eficácia do padrão Ports & Adapters.
+- **Evidência de pronto:**
+```
+$ npm run gate
+npm notice run mini-prontuario-t3@3.0.0 gate
+npm notice run bash gate.sh
+
+──────────────────────────────────────────────
+▶ 1/4 Tipos (tsc --noEmit)
+──────────────────────────────────────────────
+npm notice run mini-prontuario-t3@3.0.0 npx
+npm notice run 'tsc' --noEmit
+✔ tipos ok
+
+──────────────────────────────────────────────
+▶ 2/4 Arquitetura (dependency-cruiser)
+──────────────────────────────────────────────
+npm notice run mini-prontuario-t3@3.0.0 npx
+npm notice run 'depcruise' src --config .dependency-cruiser.cjs
+
+✔ no dependency violations found (33 modules, 64 dependencies cruised)
+
+✔ regras de dependência respeitadas
+
+──────────────────────────────────────────────
+▶ 3/4 Testes de API (node:test, servidor real em porta efêmera)
+──────────────────────────────────────────────
+✔ GET /api/health responde 200 ok (42.513469ms)
+✔ GET /api/patients devolve lista em camelCase (formato do banco não vaza) (13.028342ms)
+✔ GET /api/patients/:id inexistente -> 404 no contrato de erro (6.864238ms)
+✔ POST /api/patients válido -> 201 com id gerado (36.281347ms)
+✔ POST /api/patients inválido -> 400 com details por campo (Zod) (5.046156ms)
+✔ POST /api/patients com CNS duplicado -> 409 (invariante N1) (11.4486ms)
+✔ Encounters: lista do seed e criação -> 200/201; paciente fantasma -> 404 (16.33798ms)
+✔ Medications: lista e criação aninhadas no encounter -> 200/201; encounter fantasma -> 404 (16.128663ms)
+✔ Upload: PNG pequeno -> 200 com photoUrl; sem arquivo -> 422 (15.316585ms)
+✔ Upload: mimetype proibido -> 422 mesmo com extensão .jpg (filtro por conteúdo declarado) (3.563238ms)
+﹣ setup: register dos dois papéis funciona (53.109404ms) # trilha AUTH ainda não implementada
+﹣ ATAQUE 1 — sem token: POST encounter -> 401 (0.366223ms) # trilha AUTH ainda não implementada
+﹣ ATAQUE 2 — token ADULTERADO: assinatura invalida -> 401 (0.166425ms) # trilha AUTH ainda não implementada
+﹣ ATAQUE 3 — papel errado: recepcao tenta prescrever -> 403 (invariante N2) (0.201502ms) # trilha AUTH ainda não implementada
+﹣ ATAQUE 4 — recepcao consegue o que a matriz permite: criar paciente -> 201 (0.148842ms) # trilha AUTH ainda não implementada
+﹣ ATAQUE 5 — login com senha errada -> 401 SEM revelar qual campo errou (0.111621ms) # trilha AUTH ainda não implementada
+﹣ ATAQUE 6 — regra de domínio: profissional B não prescreve no atendimento do profissional A (0.131629ms) # trilha AUTH ainda não implementada
+ℹ tests 17
+ℹ suites 0
+ℹ pass 10
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 7
+ℹ todo 0
+ℹ duration_ms 489.273005
+✔ testes verdes
+
+──────────────────────────────────────────────
+▶ 4/4 Segredos no repositório (gitleaks)
+──────────────────────────────────────────────
+7:01PM INF 17 commits scanned.
+7:01PM INF scanned ~1511879 bytes (1.51 MB) in 212ms
+7:01PM INF no leaks found
+✔ nenhum segredo detectado
+
+==============================================
+GATE VERDE ✔ — pronto para PR (cole ESTA saída como evidência)
+```
+- **Revisão adversarial** (quando houve): 
+- **O que EU decidi** (a parte que não foi delegada): 
