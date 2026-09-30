@@ -132,3 +132,103 @@ npm notice run tsx --test tests/*.test.ts
 ```
 - **Revisão adversarial** (quando houve): 
 - **O que EU decidi** (a parte que não foi delegada): 
+
+---
+
+Tarefa: Correção de violações de arquitetura (ARQ-4 e ARQ-5)
+Trilha: ARQ
+Rota:
+chat|agente: agente
+- **Ferramenta/modelo :** Gemini 3.8 Flash (Medium)
+- **Prompt (chat: C-P-T-R-F-A):**
+Contexto:
+Você está trabalhando em um projeto Node/TS estruturado no padrão Port & Adapter. Os arquivos de referência para esta tarefa são @AGENTS.md, @INVARIANTES.md, @src/controllers/encounters.controller.ts` (ARQ-5) e @src/controllers/medications.controller.ts` e `src/services/medications.service.ts` (ARQ-4).
+
+Papel:
+Segue o mesmo do comando anterior.
+
+Tarefa:
+Corrigir as duas violações da Regra da Dependência acusadas pelo `dependency-cruiser` (`npm run arch`), garantindo que:
+1. Controllers não acessem a infraestrutura de banco de dados (`controllers-nao-tocam-o-banco`).
+2. Services não conheçam objetos de contexto HTTP/Web (`services-nao-conhecem-a-web`).
+
+Restrições:
+Segue o mesmo do comando anterior.
+
+Formato:
+Segue o mesmo do comando anterior.
+
+Aceitação (Done when):
+   - `npm run check`: Tipos estritos sem erro (0 falhas).
+   - `npm run arch`: **Verde** (0 violações em 31 módulos e 57 dependências analisadas).
+   - `npm test`: Todos os testes da API aprovados (10/10).
+   - `npm run gate`: **GATE VERDE ✔** (todas as 4 etapas aprovadas: tipos, arquitetura, testes e ausência de segredos).
+- **Arquivos editados?**:
+  - `src/controllers/encounters.controller.ts`: removido o `import { db }` e a query direta ao banco de dados que verificava a existência do paciente, pois o serviço `encountersService.listEncountersByPatient` já efetua essa validação via `getPatientById` (ARQ-5).
+  - `src/controllers/medications.controller.ts`: atualizado para extrair o `encounterId` numérico dos parâmetros da requisição e repassá-lo ao serviço, em vez de enviar o objeto `Request` (ARQ-4).
+  - `src/services/medications.service.ts`: ajustado para receber diretamente `encounterId: number`, eliminando completamente qualquer dependência ou tipagem acoplada a contextos HTTP/Web (ARQ-4).
+- **Evidência de pronto:**
+```
+$ npm run gate
+npm notice run mini-prontuario-t3@3.0.0 gate
+npm notice run bash gate.sh
+
+──────────────────────────────────────────────
+▶ 1/4 Tipos (tsc --noEmit)
+──────────────────────────────────────────────
+npm notice run mini-prontuario-t3@3.0.0 npx
+npm notice run 'tsc' --noEmit
+✔ tipos ok
+
+──────────────────────────────────────────────
+▶ 2/4 Arquitetura (dependency-cruiser)
+──────────────────────────────────────────────
+npm notice run mini-prontuario-t3@3.0.0 npx
+npm notice run 'depcruise' src --config .dependency-cruiser.cjs
+
+✔ no dependency violations found (31 modules, 60 dependencies cruised)
+
+✔ regras de dependência respeitadas
+
+──────────────────────────────────────────────
+▶ 3/4 Testes de API (node:test, servidor real em porta efêmera)
+──────────────────────────────────────────────
+✔ GET /api/health responde 200 ok (35.642477ms)
+✔ GET /api/patients devolve lista em camelCase (formato do banco não vaza) (5.327227ms)
+✔ GET /api/patients/:id inexistente -> 404 no contrato de erro (4.161052ms)
+✔ POST /api/patients válido -> 201 com id gerado (33.391509ms)
+✔ POST /api/patients inválido -> 400 com details por campo (Zod) (4.994014ms)
+✔ POST /api/patients com CNS duplicado -> 409 (invariante N1) (9.866565ms)
+✔ Encounters: lista do seed e criação -> 200/201; paciente fantasma -> 404 (13.264032ms)
+✔ Medications: lista e criação aninhadas no encounter -> 200/201; encounter fantasma -> 404 (13.700435ms)
+✔ Upload: PNG pequeno -> 200 com photoUrl; sem arquivo -> 422 (15.198361ms)
+✔ Upload: mimetype proibido -> 422 mesmo com extensão .jpg (filtro por conteúdo declarado) (3.993183ms)
+﹣ setup: register dos dois papéis funciona (43.55592ms) # trilha AUTH ainda não implementada
+﹣ ATAQUE 1 — sem token: POST encounter -> 401 (0.263775ms) # trilha AUTH ainda não implementada
+﹣ ATAQUE 2 — token ADULTERADO: assinatura invalida -> 401 (0.153272ms) # trilha AUTH ainda não implementada
+﹣ ATAQUE 3 — papel errado: recepcao tenta prescrever -> 403 (invariante N2) (0.161727ms) # trilha AUTH ainda não implementada
+﹣ ATAQUE 4 — recepcao consegue o que a matriz permite: criar paciente -> 201 (0.124729ms) # trilha AUTH ainda não implementada
+﹣ ATAQUE 5 — login com senha errada -> 401 SEM revelar qual campo errou (0.115542ms) # trilha AUTH ainda não implementada
+﹣ ATAQUE 6 — regra de domínio: profissional B não prescreve no atendimento do profissional A (0.148924ms) # trilha AUTH ainda não implementada
+ℹ tests 17
+ℹ suites 0
+ℹ pass 10
+ℹ fail 0
+ℹ skipped 7
+ℹ todo 0
+ℹ duration_ms 435.139442
+✔ testes verdes
+
+──────────────────────────────────────────────
+▶ 4/4 Segredos no repositório (gitleaks)
+──────────────────────────────────────────────
+6:40PM INF 16 commits scanned.
+6:40PM INF scanned ~1505431 bytes (1.51 MB) in 206ms
+6:40PM INF no leaks found
+✔ nenhum segredo detectado
+
+==============================================
+GATE VERDE ✔ — pronto para PR (cole ESTA saída como evidência)
+```
+- **Revisão adversarial** (quando houve): 
+- **O que EU decidi** (a parte que não foi delegada): 

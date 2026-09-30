@@ -44,6 +44,16 @@ module.exports = {
       from: { path: "^src/services" },
       to: { path: "^src/(controllers|routes|middlewares)|^node_modules/(express|multer)" },
     },
+
+    // Adicionando regra para obrigar o uso de repositories (ARQ-6)
+    {
+      name: "so-repositories-importam-o-driver",
+      comment:
+        "Acesso a dados mora exclusivamente na camada de repositories. Qualquer outra camada importando o driver viola a fronteira.",
+      severity: "error",
+      from: { path: "^src/(?!repositories)" },
+      to: { path: "^src/database|@prisma" },
+    },
   ],
   options: {
     doNotFollow: { path: "node_modules" },

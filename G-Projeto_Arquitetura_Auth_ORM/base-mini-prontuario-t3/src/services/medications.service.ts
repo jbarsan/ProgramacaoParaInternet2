@@ -11,17 +11,10 @@ import {
   defaultMedicationsRepository,
 } from "../repositories/medications.repository";
 
-type EncounterRequest = {
-  params: {
-    encounterId?: string | number;
-  };
-};
-
 export function listMedicationsByEncounter(
-  request: EncounterRequest | number,
+  encounterId: number,
   repository: MedicationsRepository = defaultMedicationsRepository,
 ) {
-  const encounterId = typeof request === "number" ? request : Number(request.params.encounterId);
   getEncounterById(encounterId); // 404 se o atendimento não existe
 
   return repository.findByEncounterId(encounterId);

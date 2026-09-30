@@ -5,7 +5,9 @@ import type { Request, Response } from "express";
 import * as medicationsService from "../services/medications.service";
 
 export function listByEncounter(request: Request, response: Response) {
-  const medications = medicationsService.listMedicationsByEncounter(request);
+  const medications = medicationsService.listMedicationsByEncounter(
+    Number(request.params.encounterId),
+  );
   response.status(200).json(medications);
 }
 
