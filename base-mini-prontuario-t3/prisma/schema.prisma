@@ -1,0 +1,59 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           Int         @id @default(autoincrement())
+  name         String
+  email        String      @unique
+  passwordHash String      @map("password_hash")
+  role         String      // "admin" | "profissional" | "recepcao"
+  createdAt    DateTime    @default(now()) @map("created_at")
+  encounters   Encounter[]
+
+  @@map("users")
+}
+
+model Patient {
+  id         Int         @id @default(autoincrement())
+  name       String
+  birthDate  String      @map("birth_date")
+  nationalId String      @unique(map: "sqlite_autoindex_patients_1") @map("national_id")
+  photoUrl   String?     @map("photo_url")
+  active     Int         @default(1)
+  encounters Encounter[]
+
+  @@map("patients")
+}
+
+model Encounter {
+  id                 Int                 @id @default(autoincrement())
+  patientId          Int                 @map("patient_id")
+  professionalId     Int?                @map("professional_id")
+  startedAt          String              @map("started_at")
+  chiefComplaint     String              @map("chief_complaint")
+  notes              String?
+  patient            Patient             @relation(fields: [patientId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  professional       User?               @relation(fields: [professionalId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  medicationRequests MedicationRequest[]
+
+  @@index([patientId], map: "idx_encounters_patient")
+  @@index([professionalId], map: "idx_encounters_professional")
+  @@map("encounters")
+}
+
+model MedicationRequest {
+  id          Int       @id @default(autoincrement())
+  encounterId Int       @map("encounter_id")
+  medication  String
+  dosage      String
+  encounter   Encounter @relation(fields: [encounterId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([encounterId], map: "idx_medreq_encounter")
+  @@map("medication_requests")
+}
