@@ -1,0 +1,138 @@
+# INVARIANTES
+
+Regras que nenhum código pode violar, seja escrito por pessoa ou por
+agente. Cada linha tem o capítulo que a criou e o teste que a prova.
+
+## Segurança de acesso
+
+- **SEC-01** Todo segredo, token ou código gerado vem de gerador
+  criptográfico (`randomBytes`, `secrets`), nunca de `Math.random` ou
+  `random`. Segredos são comparados em tempo constante
+  (`timingSafeEqual`, `hmac.compare_digest`). Base64 não é proteção.
+  *Cap. 2 · prova: revisão com grep do prompts/cap02.md.*
+- **SEC-02** Toda rota declara política como primeiro middleware ou
+  dependência; pública só se estiver em `PUBLICAS`.
+  *Cap. 3 · prova: teste do censo.*
+- **SEC-03** Resposta de erro só sai do tradutor de erros: nunca pilha,
+  caminho de arquivo ou mensagem interna. Erro desconhecido vira 500
+  genérico. *Cap. 3 · prova: ATQ-01.10.*
+- **SEC-04** O mapa da API (`/docs`, `/openapi.json`) fica fechado fora
+  do ambiente de desenvolvimento. *Cap. 3 · prova: teste do pipeline.*
+- **SEC-05** Senha só é guardada como hash argon2id (parâmetros em
+  `acesso/senhas`), nunca em texto, log ou resposta; hash antigo é
+  refeito no login. *Cap. 4 · prova: ATQ-04.5 e teste de rehash.*
+- **SEC-06** Política de senha NIST: 15 a 256 caracteres, sem regra
+  de composição, recusa a lista de bloqueio e o próprio e-mail.
+  *Cap. 4 · prova: ATQ-04.1, 04.2.*
+- **SEC-07** Falha de login: 401 "Credenciais inválidas." e o mesmo
+  tempo, exista ou não o e-mail (hash fictício).
+  *Cap. 4 · prova: ATQ-04.3, 04.4 e cronometro.py < 5%.*
+- **SEC-08** Token de redefinição: 32 bytes aleatórios, guardado só
+  como sha256, expira em 15 min, uso único; a resposta do pedido é a
+  mesma exista ou não o e-mail. *Cap. 4 · prova: testes de senha.*
+- **SEC-09** Sessão vive no servidor; o banco guarda só o sha256 do
+  token; o login sempre cria uma sessão nova e apaga a anterior.
+  *Cap. 5 · prova: ATQ-05.3.*
+- **SEC-10** Cookie `__Host-sessao` com HttpOnly, Secure, SameSite=Lax
+  e Path=/. *Cap. 5 · prova: ATQ-05.1, 05.2.*
+- **SEC-11** Sessão expira com 30 min sem uso e 8 h no total; logout e
+  troca de senha apagam no servidor. *Cap. 5 · prova: ATQ-05.4 e testes.*
+- **SEC-12** Método que altera dados com Origin fora da lista, ou
+  Sec-Fetch-Site cross-site, recebe 403. CORS só com lista de origens.
+  *Cap. 5 · prova: ATQ-05.5.*
+- **SEC-13** Token de acesso: assinado com Ed25519 (EdDSA), `typ`
+  at+jwt, `kid` no cabeçalho, 10 min de validade e só `iss`, `aud`,
+  `sub`, `iat`, `exp`, `jti` e `sid` (a família, cap. 7). Nada
+  pessoal; o papel vem do banco.
+  *Cap. 6 · prova: ATQ-06.1 a 06.4 e raiox.py.*
+- **SEC-14** Verificação com algoritmo fixo, `iss`, `aud`, `typ` e
+  `exp` obrigatórios e 30 s de tolerância. Toda falha é 401, sem plano
+  B: nunca decodificar sem verificar. *Cap. 6 · prova: ATQ-06.6 e testes.*
+- **SEC-15** O JWKS publica só chaves públicas; a chave anterior fica
+  até seus tokens vencerem. *Cap. 6 · prova: ATQ-06.5 e teste de rotação.*
+- **SEC-16** Refresh token é opaco (32 bytes), guardado só como
+  sha256, vale uma vez e pertence a uma família; parado 7 dias ou com
+  a família acima de 30 dias, morre. *Cap. 7 · prova: testes de refresh.*
+- **SEC-17** Refresh já trocado que reaparece revoga a família inteira
+  e gera o evento `refresh_reutilizado`. *Cap. 7 · prova: ATQ-07.1, 07.2.*
+- **SEC-18** "Sair de todos", troca de senha e desligamento revogam
+  famílias e sessões; nossa API confere `sid` a cada pedido. Refresh
+  nunca serve como access. *Cap. 7 · prova: ATQ-07.3 a 07.5.*
+- **SEC-19** Quem tem segundo fator recebe, após a senha, só um desafio
+  de 5 min e 5 tentativas; sessão ou token saem só depois do código.
+  O mesmo código TOTP não vale duas vezes. *Cap. 8 · prova: ATQ-08.1 a 08.3.*
+- **SEC-20** Códigos de recuperação: 10, mostrados uma vez, guardados
+  como sha256, cada um de uso único. *Cap. 8 · prova: testes de MFA.*
+- **SEC-21** Login OIDC: Authorization Code com PKCE S256, `state`
+  amarrado a um cookie `__Host-` e de uso único, `nonce` conferido, ID
+  token verificado (iss, aud, exp) e conta achada só por vínculo
+  explícito (emissor + sub), nunca pelo e-mail. *Cap. 8 · prova: ATQ-08.4 e testes de OIDC.*
+- **SEC-22** Rotas de entrada (login, token, refresh, MFA, redefinição)
+  têm limite por IP; o login tem limite de FALHAS por conta+IP (5 em
+  15 min) e por conta (50 em 1 h), conferido antes do argon2; 429 com
+  Retry-After, igual para conta que existe ou não. *Cap. 9 · prova: testes de limite.*
+- **SEC-23** Eventos de segurança (login, falha, limite, MFA, reuso de
+  refresh, senha redefinida, sair de todos) saem como uma linha JSON,
+  com id do usuário ou hash curto da conta; nunca senha, token, código
+  ou e-mail. *Cap. 9 · prova: teste de eventos.*
+- **SEC-24** Falha fechada: exceção no caminho de acesso vira 500
+  genérico, nunca acesso. *Cap. 9 · prova: teste "falhar fechado".*
+- **SEC-25** Regra de acesso que depende de mais que o papel passa por
+  um ponto de decisão com contrato fixo, autorizar(sujeito, ação,
+  recurso, contexto) -> {permitido, motivo}; política com erro nega.
+  *Cap. 10 · prova: testes de decisão.*
+- **SEC-26** Toda regra de acesso tem uma tabela de casos
+  (`politicas/casos.json`) que roda nas duas stacks e contra cada
+  implementação (código e Cedar). *Cap. 10 · prova: testes tabulares.*
+- **SEC-27** Toda rota fora de `/api/auth/*` declara uma permissão da
+  matriz; "basta estar logado" não vale para função de domínio nem de
+  administração. Nada de `if (papel === ...)` no handler.
+  *Cap. 11 · prova: censo e ATQ-11.1.*
+- **SEC-28** A suíte papel × rota (`matriz.http`) é gerada da matriz e
+  do censo por `matriz.py` e roda a cada mudança: cada combinação sem
+  permissão recebe 403. *Cap. 11 · prova: matriz 36/36.*
+- **SEC-29** Troca de papel e desligamento derrubam sessões e apps da
+  pessoa e geram evento. *Cap. 11 · prova: testes de funções admin.*
+- **SEC-30** Objeto se busca DENTRO do escopo de quem pede (consulta
+  escopada); o que a pessoa não pode ver responde 404, igual ao que não
+  existe. Lista nunca "busca tudo e o front filtra".
+  *Cap. 12 · prova: ATQ-01.12, 12.1, 12.2, 12.5.*
+- **SEC-31** Entrada por lista de campos permitidos (`.strict()` /
+  `extra="forbid"`): campo a mais é 400. Identidade, dono e papel vêm
+  da sessão, nunca do corpo. *Cap. 12 · prova: ATQ-12.3, 12.6.*
+- **SEC-32** Saída por esquema de quem pede: hash nunca sai; dado
+  clínico só para o autor. *Cap. 12 · prova: ATQ-01.13, 12.4.*
+- **SEC-33** Segredo só no ambiente ou no cofre, nunca no código nem no
+  git (`.env*` ignorado, só `.env.exemplo` versionado). Em produção,
+  segredo ausente ou com valor de exemplo impede o servidor de subir.
+  *Cap. 13 · prova: testes de configuração.*
+- **SEC-34** Segredo que vazou é TROCADO; só depois sua impressão digital
+  entra em `.varredura-ignorar`. `varredura.py` lê todo o histórico e
+  roda no CI. *Cap. 13 · prova: varredura com 0 novos.*
+- **SEC-35** Dado sensível recuperável (segredo TOTP) é cifrado com
+  AES-256-GCM e chave fora do banco, com versão para rotação. Chave do
+  JWT vem do ambiente; kid é a impressão digital. Dependências passam
+  por `npm audit` / `pip-audit` e pacote novo é conferido antes de
+  instalar. *Cap. 13 · prova: testes de cifra e auditorias.*
+- **SEC-36** `scripts/portoes.sh` roda no CI em todo push e PR: tipos,
+  testes, censo, varredura, auditoria, ataques e papel × rota. Nenhum
+  merge com portão vermelho. *Cap. 14 · prova: workflow seguranca.yml.*
+- **SEC-37** Toda correção de segurança chega com o teste negativo que
+  falharia sem ela (prova de revert) e, se for HTTP, com um bloco
+  ATQ-xx em `ataques.http`. *Cap. 14 · prova: revisão de PR.*
+- **SEC-38** Chave de API: segredo de 256 bits, só o sha256 no banco,
+  exibida uma vez; escopo explícito ⊆ papel de quem cria, sem curinga;
+  validade máxima de 90 dias. *Cap. 15 · prova: ATQ-15.3, 15.4;
+  testes de chaves.*
+- **SEC-39** Pedido com chave passa por papel de hoje E escopo da chave;
+  fora do escopo é 403 com evento `chave_fora_do_escopo`. *Cap. 15 ·
+  prova: ATQ-15.1; teste "o papel de hoje vale".*
+- **SEC-40** Chave não gerencia conta nem cria chave; revogação,
+  vencimento, desligamento e troca de papel matam a chave. *Cap. 15 ·
+  prova: ATQ-15.2, 15.5, 15.6; testes "a chave morre".*
+- **SEC-41** 401 traz `WWW-Authenticate` com `resource_metadata`, e
+  `/.well-known/oauth-protected-resource` descreve emissor e escopos
+  (RFC 9728). *Cap. 15 · prova: ATQ-15.8, 15.9.*
+- **SEC-42** Competência declarada na régua só vale com evidência que
+  existe no repositório; `python regua.py` confere. *Cap. 16 · prova:
+  REGUA.md.*

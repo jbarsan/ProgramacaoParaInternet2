@@ -1,0 +1,20 @@
+import { criarApp } from "../src/app.js";
+import { levantar, problemas } from "../src/acesso/censo.js";
+
+const linhas = levantar(criarApp());
+if (process.argv.includes("--json")) {   // para o matriz.py (cap. 11)
+  console.log(JSON.stringify(linhas));
+  process.exit(0);
+}
+for (const { metodo, caminho, politica } of linhas) {
+  const p = !politica ? "— NENHUMA —" : "publica" in politica ? "pública"
+    : "autenticada" in politica ? "autenticada" : politica.permissao;
+  const linha = `${metodo.padEnd(6)} ${caminho}`;
+  // cabe em 46 colunas? política na mesma linha; senão, embaixo
+  console.log(linha.length <= 28
+    ? `${linha.padEnd(29)}${p}` : `${linha}\n${"".padEnd(29)}${p}`);
+}
+const erros = problemas(linhas);
+console.log(`\n${linhas.length} rotas · ${erros.length} problema(s)`);
+erros.forEach((e) => console.log(`✗ ${e}`));
+process.exit(erros.length ? 1 : 0);

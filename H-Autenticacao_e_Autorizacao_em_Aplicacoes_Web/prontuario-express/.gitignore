@@ -1,0 +1,4 @@
+node_modules/
+# Nenhum arquivo de ambiente entra no git, exceto o exemplo (capítulo 13).
+.env*
+!.env.exemplo
