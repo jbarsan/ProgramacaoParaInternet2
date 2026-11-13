@@ -1,0 +1,437 @@
+# ataques.http — suíte de ataques compartilhada pelas duas stacks.
+# Rode no VS Code (REST Client) ou com: python placar.py ataques.http
+# "# @espera" descreve o comportamento SEGURO. Se o servidor não se
+# comportar assim, o ataque funcionou. Desde o capítulo 5, cada papel
+# entra com login de verdade; "# @sessao" guarda o cookie de cada um.
+@base = http://localhost:3000
+
+### PREPARAÇÃO · login de cada papel
+# @sessao admin
+POST {{base}}/api/auth/login
+Content-Type: application/json
+
+{"email": "admin@hospital.dev", "senha": "farol-de-amarracao-2026"}
+
+### PREPARAÇÃO
+# @sessao ana
+POST {{base}}/api/auth/login
+Content-Type: application/json
+
+{"email": "ana@hospital.dev", "senha": "cajueiro-em-flor-no-quintal"}
+
+### PREPARAÇÃO
+# @sessao bruno
+POST {{base}}/api/auth/login
+Content-Type: application/json
+
+{"email": "bruno@hospital.dev", "senha": "barco-azul-no-delta"}
+
+### PREPARAÇÃO
+# @sessao carla
+POST {{base}}/api/auth/login
+Content-Type: application/json
+
+{"email": "carla@hospital.dev", "senha": "rede-na-varanda-de-tarde"}
+
+### ATQ-01.1 · sem crachá, lista pacientes
+# @espera status=401
+GET {{base}}/api/patients
+
+### ATQ-01.2 · sem crachá, lê prescrições
+# @espera status=401
+GET {{base}}/api/medication-requests
+
+### ATQ-01.3 · sem crachá, lista usuários
+# @espera status=401
+GET {{base}}/api/admin/users
+
+### ATQ-01.4 · sem crachá, cria um admin
+# @espera status=401
+POST {{base}}/api/admin/users
+Content-Type: application/json
+
+{"nome": "Intruso", "email": "x@x.dev", "papel": "admin"}
+
+### ATQ-01.5 · recepção lê prescrições
+# @espera status=403
+# @sessao carla
+GET {{base}}/api/medication-requests
+
+### ATQ-01.6 · recepção prescreve
+# @espera status=403
+# @sessao carla
+POST {{base}}/api/encounters/e1/medication-requests
+Content-Type: application/json
+
+{"medicamento": "Morfina 10 mg", "posologia": "4/4h", "profissionalId": "u2"}
+
+### ATQ-01.7 · admin prescreve (nem admin pode)
+# @espera status=403
+# @sessao admin
+POST {{base}}/api/encounters/e1/medication-requests
+Content-Type: application/json
+
+{"medicamento": "Morfina 10 mg", "posologia": "4/4h", "profissionalId": "u1"}
+
+### ATQ-01.8 · recepção lista usuários
+# @espera status=403
+# @sessao carla
+GET {{base}}/api/admin/users
+
+### ATQ-01.9 · rota de debug esquecida
+# @espera status=401|404
+GET {{base}}/api/debug/dump
+
+### ATQ-01.10 · JSON malformado vaza a pilha
+# @espera status=400|422 sem=node_modules sem=Traceback
+# @sessao ana
+POST {{base}}/api/patients
+Content-Type: application/json
+
+{"nome": "Teste",
+
+### ATQ-01.11 · crachá de papelão forjado (cabeçalho inventado)
+# @espera status=401
+GET {{base}}/api/admin/users
+X-Usuario-Demo: admin@hospital.dev
+
+### ATQ-01.12 · Bruno lê o atendimento de Ana
+# @espera status=404
+# @sessao bruno
+GET {{base}}/api/encounters/e1
+
+### ATQ-01.13 · hash de senha na resposta
+# @espera sem=passwordHash
+# @sessao admin
+GET {{base}}/api/admin/users
+
+# ---------------------------------------------------------- capítulo 4
+
+### ATQ-04.1 · admin cria usuário com senha curta
+# @espera status=400
+# @sessao admin
+POST {{base}}/api/admin/users
+Content-Type: application/json
+
+{"nome": "Teste", "email": "t1@hospital.dev", "papel": "recepcao", "senha": "123456"}
+
+### ATQ-04.2 · senha longa, mas da lista de comuns
+# @espera status=400
+# @sessao admin
+POST {{base}}/api/admin/users
+Content-Type: application/json
+
+{"nome": "Teste", "email": "t2@hospital.dev", "papel": "recepcao", "senha": "123456789012345"}
+
+### ATQ-04.3 · e-mail inexistente responde diferente
+# @espera status=401 contem=Credenciais
+POST {{base}}/api/auth/login
+Content-Type: application/json
+
+{"email": "ninguem@hospital.dev", "senha": "senha-errada-de-proposito"}
+
+### ATQ-04.4 · senha errada responde diferente
+# @espera status=401 contem=Credenciais
+POST {{base}}/api/auth/login
+Content-Type: application/json
+
+{"email": "ana@hospital.dev", "senha": "senha-errada-de-proposito"}
+
+### ATQ-04.5 · login devolve o hash da senha
+# @espera status=200 sem=passwordHash
+POST {{base}}/api/auth/login
+Content-Type: application/json
+
+{"email": "ana@hospital.dev", "senha": "cajueiro-em-flor-no-quintal"}
+
+# ---------------------------------------------------------- capítulo 5
+
+### ATQ-05.1 · cookie de sessão legível por JavaScript
+# @espera status=200 cab=set-cookie~HttpOnly
+# @sessao ana-2
+POST {{base}}/api/auth/login
+Content-Type: application/json
+
+{"email": "ana@hospital.dev", "senha": "cajueiro-em-flor-no-quintal"}
+
+### ATQ-05.2 · cookie sem Secure, SameSite e prefixo __Host-
+# @espera status=200 cab=set-cookie~Secure cab=set-cookie~SameSite=Lax cab=set-cookie~__Host-
+POST {{base}}/api/auth/login
+Content-Type: application/json
+
+{"email": "ana@hospital.dev", "senha": "cajueiro-em-flor-no-quintal"}
+
+### ATQ-05.3 · fixação: login aceita o identificador do atacante
+# @espera status=200 cab=set-cookie!~fixado-pelo-atacante
+POST {{base}}/api/auth/login
+Content-Type: application/json
+Cookie: __Host-sessao=fixado-pelo-atacante; sessao=fixado-pelo-atacante
+
+{"email": "ana@hospital.dev", "senha": "cajueiro-em-flor-no-quintal"}
+
+### PREPARAÇÃO · logout da ana-2, guardando uma cópia do cookie
+# @clona ana-2 ana-2-velha
+# @sessao ana-2
+POST {{base}}/api/auth/logout
+
+### ATQ-05.4 · cookie de antes do logout continua valendo
+# @espera status=401
+# @sessao ana-2-velha
+GET {{base}}/api/auth/me
+
+### ATQ-05.5 · CSRF: outro site dispara ação com a sessão da ana
+# @espera status=403
+# @sessao ana
+POST {{base}}/api/patients
+Origin: https://atacante.exemplo
+Content-Type: application/json
+
+{"nome": "Paciente Fantasma", "cns": "898000000000001", "nascimento": "2000-01-01"}
+
+# --- capítulo 6 · tokens de API (JWT) -------------------------------
+
+### ATQ-06.1 · token carrega dados pessoais legíveis
+# @espera status=200 jwt-sem=email,nome,papel
+POST {{base}}/api/auth/token
+Content-Type: application/json
+
+{"email": "ana@hospital.dev", "senha": "cajueiro-em-flor-no-quintal"}
+
+### ATQ-06.2 · token vale por dias
+# @espera status=200 jwt-ttl<=900
+POST {{base}}/api/auth/token
+Content-Type: application/json
+
+{"email": "ana@hospital.dev", "senha": "cajueiro-em-flor-no-quintal"}
+
+### ATQ-06.3 · token sem emissor, audiência e identificador
+# @espera status=200 jwt-tem=iss,aud,jti
+POST {{base}}/api/auth/token
+Content-Type: application/json
+
+{"email": "ana@hospital.dev", "senha": "cajueiro-em-flor-no-quintal"}
+
+### ATQ-06.4 · token assinado com segredo compartilhado
+# @espera status=200 jwt-alg=EdDSA
+POST {{base}}/api/auth/token
+Content-Type: application/json
+
+{"email": "ana@hospital.dev", "senha": "cajueiro-em-flor-no-quintal"}
+
+### ATQ-06.5 · chave pública não publicada, ou com a parte privada
+# @espera status=200 contem="kid" sem="d":
+GET {{base}}/.well-known/jwks.json
+
+### ATQ-06.6 · token malformado derruba o servidor (500)
+# @espera status=401
+GET {{base}}/api/auth/me
+Authorization: Bearer isto.nao.e-um-token
+
+# --- capítulo 7 · refresh token, rotação e logout em todos -----------
+
+### PREPARAÇÃO · o app da ana pede o primeiro par de tokens
+# @guarda rt1=refresh_token
+POST {{base}}/api/auth/token
+Content-Type: application/json
+
+{"email": "ana@hospital.dev", "senha": "cajueiro-em-flor-no-quintal"}
+
+### PREPARAÇÃO · rotação normal: rt1 vira rt2
+# @guarda rt2=refresh_token
+POST {{base}}/api/auth/refresh
+Content-Type: application/json
+
+{"refresh_token": "{{rt1}}"}
+
+### ATQ-07.1 · refresh antigo (roubado) aceito depois da rotação
+# @espera status=401
+POST {{base}}/api/auth/refresh
+Content-Type: application/json
+
+{"refresh_token": "{{rt1}}"}
+
+### ATQ-07.2 · depois do reuso, a família continua viva
+# @espera status=401
+POST {{base}}/api/auth/refresh
+Content-Type: application/json
+
+{"refresh_token": "{{rt2}}"}
+
+### PREPARAÇÃO · o app do bruno pede um par
+# @guarda at3=access_token rt3=refresh_token
+POST {{base}}/api/auth/token
+Content-Type: application/json
+
+{"email": "bruno@hospital.dev", "senha": "barco-azul-no-delta"}
+
+### ATQ-07.3 · refresh token aceito como token de acesso
+# @espera status=401
+GET {{base}}/api/auth/me
+Authorization: Bearer {{rt3}}
+
+### PREPARAÇÃO · bruno sai de todos os dispositivos
+POST {{base}}/api/auth/logout-all
+Authorization: Bearer {{at3}}
+
+### ATQ-07.4 · access de antes do "sair de todos" continua valendo
+# @espera status=401
+GET {{base}}/api/auth/me
+Authorization: Bearer {{at3}}
+
+### ATQ-07.5 · refresh de antes do "sair de todos" continua valendo
+# @espera status=401
+POST {{base}}/api/auth/refresh
+Content-Type: application/json
+
+{"refresh_token": "{{rt3}}"}
+
+# --- capítulo 8 · segundo fator e login federado ---------------------
+
+### ATQ-08.1 · senha certa de quem tem MFA já abre a sessão
+# @espera status=200 contem=desafio cab=set-cookie!~__Host-sessao
+POST {{base}}/api/auth/login
+Content-Type: application/json
+
+{"email": "eva@hospital.dev", "senha": "mangueira-no-fim-da-rua"}
+
+### ATQ-08.2 · cliente de API de quem tem MFA recebe token só com a senha
+# @espera status=200 contem=desafio sem=access_token
+POST {{base}}/api/auth/token
+Content-Type: application/json
+
+{"email": "eva@hospital.dev", "senha": "mangueira-no-fim-da-rua"}
+
+### ATQ-08.3 · desafio inventado aceito no segundo passo
+# @espera status=401
+POST {{base}}/api/auth/mfa/verificar
+Content-Type: application/json
+
+{"desafio": "inventado", "codigo": "000000"}
+
+### ATQ-08.4 · volta do provedor aceita sem state
+# @espera status=400
+GET {{base}}/api/auth/oidc/callback?code=qualquer
+
+# --- capítulo 11 · funções administrativas -------------------------
+
+### ATQ-11.1 · recepção usa a função administrativa de desligar alguém
+# @espera status=403
+# @sessao carla
+POST {{base}}/api/admin/users/u3/desligar
+
+# --- capítulo 12 · o dono do objeto ---------------------------------
+
+### PREPARAÇÃO · Bruno entra de novo (ele saiu de todos no capítulo 7)
+# @sessao bruno-12
+POST {{base}}/api/auth/login
+Content-Type: application/json
+
+{"email": "bruno@hospital.dev", "senha": "barco-azul-no-delta"}
+
+### ATQ-12.1 · Bruno altera o atendimento da Ana trocando o id
+# @espera status=404
+# @sessao bruno-12
+PATCH {{base}}/api/encounters/e1
+Content-Type: application/json
+
+{"motivo": "alterado pelo Bruno"}
+
+### ATQ-12.2 · Bruno prescreve no atendimento da Ana
+# @espera status=403|404
+# @sessao bruno-12
+POST {{base}}/api/encounters/e1/medication-requests
+Content-Type: application/json
+
+{"medicamento": "Morfina 10 mg", "posologia": "se dor", "profissionalId": "u3"}
+
+### ATQ-12.3 · Ana prescreve em nome do Bruno (profissionalId no corpo)
+# @espera status=400|403 sem=u3
+# @sessao ana
+POST {{base}}/api/encounters/e1/medication-requests
+Content-Type: application/json
+
+{"medicamento": "AAS 100 mg", "posologia": "1x ao dia", "profissionalId": "u3"}
+
+### ATQ-12.4 · recepção lê o motivo clínico do atendimento
+# @espera status=200 sem=motivo
+# @sessao carla
+GET {{base}}/api/encounters/e1
+
+### ATQ-12.5 · Bruno lista os atendimentos e recebe os da Ana
+# @espera status=200 sem="e1"
+# @sessao bruno-12
+GET {{base}}/api/encounters
+
+### ATQ-12.6 · recepção se promove a admin editando o próprio perfil
+# @espera status=400
+# @sessao carla
+PATCH {{base}}/api/auth/me
+Content-Type: application/json
+
+{"nome": "Carla", "papel": "admin"}
+
+# --- capítulo 15 · chaves de API e agentes --------------------------
+
+### PREPARAÇÃO · Ana cria uma chave só de leitura para o assistente
+# @sessao ana
+# @guarda k1=chave k1id=id
+POST {{base}}/api/auth/chaves
+Content-Type: application/json
+
+{"nome": "assistente (leitura)", "escopos": ["patient:read", "encounter:read"]}
+
+### ATQ-15.1 · chave de leitura cria paciente (fora do escopo)
+# @espera status=403
+POST {{base}}/api/patients
+Authorization: ApiKey {{k1}}
+Content-Type: application/json
+
+{"nome": "Paciente do agente", "cns": "898001112223334", "nascimento": "2000-01-01"}
+
+### ATQ-15.2 · chave cria outra chave para si (escalada)
+# @espera status=403
+POST {{base}}/api/auth/chaves
+Authorization: ApiKey {{k1}}
+Content-Type: application/json
+
+{"nome": "filha", "escopos": ["patient:read"]}
+
+### ATQ-15.3 · recepção delega uma permissão que não tem
+# @espera status=403
+# @sessao carla
+POST {{base}}/api/auth/chaves
+Content-Type: application/json
+
+{"nome": "farmácia", "escopos": ["rx:create"]}
+
+### ATQ-15.4 · listagem devolve a chave ou o hash
+# @espera status=200 contem={{k1id}} sem={{k1}} sem=hash
+# @sessao ana
+GET {{base}}/api/auth/chaves
+
+### ATQ-15.5 · Bruno revoga a chave da Ana
+# @espera status=404
+# @sessao bruno-12
+DELETE {{base}}/api/auth/chaves/{{k1id}}
+
+### PREPARAÇÃO · Ana revoga a própria chave
+# @sessao ana
+DELETE {{base}}/api/auth/chaves/{{k1id}}
+
+### ATQ-15.6 · chave revogada continua valendo
+# @espera status=401
+GET {{base}}/api/patients
+Authorization: ApiKey {{k1}}
+
+### ATQ-15.7 · chave inventada com o prefixo certo
+# @espera status=401
+GET {{base}}/api/patients
+Authorization: ApiKey mp_{{k1id}}_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+
+### ATQ-15.8 · 401 não diz onde ler como se autenticar
+# @espera status=401 cab=WWW-Authenticate~resource_metadata
+GET {{base}}/api/patients
+
+### ATQ-15.9 · recurso protegido sem metadados (RFC 9728)
+# @espera status=200 contem=authorization_servers contem=scopes_supported
+GET {{base}}/.well-known/oauth-protected-resource
